@@ -18,6 +18,7 @@ def parse_config(config_file):
             task_weeks = task.get("weeks", "*")
             task_months = task.get("months", "*")
             task_years = task.get("years", "*")
+            task_date = task.get("date", "")  # Add support for date field
 
             tasks.append({
                 "name": task_name,
@@ -28,6 +29,7 @@ def parse_config(config_file):
                 "weeks": task_weeks,
                 "months": task_months,
                 "years": task_years,
+                "date": task_date,  # Store the date field
             })
 
     return tasks
@@ -47,10 +49,18 @@ def main():
         weeks = task["weeks"]
         months = task["months"]
         years = task["years"]
+        date = task["date"]  # Retrieve the date field
 
-        # Schedule the task with UTaskScheduler
-        scheduler.schedule(action, minutes, hours, days, weeks, months, years)
-        print(f"Scheduled task '{name}'.")
+        if date:
+            # If a date field is provided, use it for one-time scheduling
+            command = " ".join(action)  # Convert action to a command string
+            scheduler.schedule(command, date)
+            print(f"Scheduled one-time task '{name}' at {date}.")
+        else:
+            # Schedule the task with UTaskScheduler
+            command = " ".join(action)  # Convert action to a command string
+            scheduler.schedule(command, minutes, hours, days, weeks, months, years)
+            print(f"Scheduled task '{name}'.")
 
 if __name__ == "__main__":
     main()

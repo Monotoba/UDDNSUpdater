@@ -1,9 +1,4 @@
 import os
-import platform
-import subprocess
-import sys
-import time
-import xml.etree.ElementTree as ET
 
 class MacTaskScheduler:
     def __init__(self, schedule_args, system_task=False):

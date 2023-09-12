@@ -1,18 +1,13 @@
 import os
-import platform
 import subprocess
+import platform
 
 
 class UnixTaskScheduler:
-    def __init__(self, schedule_args, system_task=False):
+    def __init__(self, schedule_args, command, system_task=False):
         self.schedule_args = schedule_args
+        self.command = command
         self.system_task = system_task
-
-    def update_ddns(self):
-        print("Updating DDNS...")
-        # Replace this with the command to run ddns_updater.py
-        # Example: subprocess.run(["python", "ddns_updater.py", "--arg1", "--arg2"])
-        subprocess.run(["python", "ddns_updater.py"])
 
     def schedule(self):
         system = platform.system()
@@ -21,16 +16,18 @@ class UnixTaskScheduler:
         elif system == "Darwin":
             self.schedule_macos()
         else:
-            print("Unsupported operating system. DDNS scheduling not available.")
+            print("Unsupported operating system. Task scheduling not available.")
 
     def schedule_linux(self):
         cron_schedule = " ".join(map(str, self.schedule_args))
-        cron_command = f"python ddns_updater.py --schedule {cron_schedule}"
 
-        # Write the cron job to the user's crontab
+        # Construct the cron command with the specified command
+        cron_command = f"{cron_schedule} {self.command}"
+
         try:
             username = os.getlogin()
-            cron_command = f"(crontab -l 2>/dev/null; echo '{cron_schedule} {cron_command}') | crontab -"
+            # Schedule the cron job in the user's crontab
+            cron_command = f"(crontab -l 2>/dev/null; echo '{cron_command}') | crontab -"
             subprocess.run(cron_command, shell=True, check=True, stdout=subprocess.PIPE)
             print("Cron job scheduled successfully.")
         except subprocess.CalledProcessError as e:

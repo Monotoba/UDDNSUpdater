@@ -1,10 +1,9 @@
 import configparser
 import platform
 import sys
-
-from UTaskScheduler.scheduler.scheduler_macos import MacTaskScheduler
-from UTaskScheduler.scheduler.scheduler_unix import UnixTaskScheduler
-from UTaskScheduler.scheduler.scheduler_windows import WindowsTaskScheduler
+from schedulers.scheduler_macos import MacTaskScheduler
+from schedulers.scheduler_unix import UnixTaskScheduler
+from schedulers.scheduler_windows import WindowsTaskScheduler
 
 
 class UTaskScheduler:
@@ -27,25 +26,26 @@ class UTaskScheduler:
                 # Schedule the task based on the parameters
                 for hour in hours:
                     for minute in minutes:
-                        scheduler = self.get_scheduler(schedule_args=[hour, minute], system_task=True)
-                        scheduler.schedule(command)
+                        self.schedule_task(command, hour, minute)
                 print("Scheduled task based on config.ini.")
             else:
                 print("Invalid scheduling parameters in config.ini.")
         else:
             print("No scheduling parameters found in config.ini.")
 
-    def get_scheduler(self, schedule_args, system_task=False):
+    def schedule_task(self, command, hour, minute):
         system = platform.system()
         if system == "Windows":
-            return WindowsTaskScheduler(schedule_args, system_task)
+            scheduler = WindowsTaskScheduler(schedule_args=[hour, minute], system_task=True)
         elif system == "Linux":
-            return UnixTaskScheduler(schedule_args, system_task)
+            scheduler = UnixTaskScheduler(schedule_args=[hour, minute], system_task=True)
         elif system == "Darwin":
-            return MacTaskScheduler(schedule_args, system_task)
+            scheduler = MacTaskScheduler(schedule_args=[hour, minute], system_task=True)
         else:
             print("Unsupported operating system. Task scheduling not available.")
             sys.exit(1)
+
+        scheduler.schedule(command)
 
     def parse_cron_field(self, field, max_value):
         if field == "*":
@@ -60,3 +60,9 @@ class UTaskScheduler:
             if 0 <= value < max_value:
                 return [value]
         return []
+
+if __name__ == "__main__":
+    config_file = "config.ini"  # Update with your config file path
+    command = "python your_script.py"  # Replace with your command
+    scheduler = UTaskScheduler(config_file)
+    scheduler.schedule(command)

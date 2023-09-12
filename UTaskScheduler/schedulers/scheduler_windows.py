@@ -1,36 +1,31 @@
-import getpass
 import os
 import subprocess
 import tempfile
-
+import xml.etree.ElementTree as ET
 
 class WindowsTaskScheduler:
-    def __init__(self, schedule_args, system_task=False):
+    def __init__(self, schedule_args, command, task_name="MyTask", task_description="Scheduled Task"):
         self.schedule_args = schedule_args
-        self.system_task = system_task
+        self.command = command
+        self.task_name = task_name
+        self.task_description = task_description
 
     def schedule(self):
         # Create an XML task definition for Windows Task Scheduler
         task_xml = self.create_task_xml()
 
-        # Determine the task folder (system or user)
-        task_folder = "\\Microsoft\\Windows\\DDNSScheduler" if self.system_task else ""
-
         # Generate a temporary XML file for the task definition
         temp_dir = tempfile.gettempdir()
-        task_file_path = os.path.join(temp_dir, "ddns_task.xml")
+        task_file_path = os.path.join(temp_dir, f"{self.task_name}_task.xml")
 
         with open(task_file_path, "w") as task_file:
             task_file.write(task_xml)
 
         # Use schtasks to create the scheduled task
         try:
-            username = getpass.getuser()
-            task_folder = task_folder.replace("\\", "\\\\")
-            task_name = "DDNSScheduler"
-            task_command = f"schtasks /CREATE /XML {task_file_path} /TN {task_folder}\\{task_name}"
+            task_command = f"schtasks /CREATE /XML {task_file_path} /TN {self.task_name}"
             subprocess.run(task_command, shell=True, check=True)
-            print(f"Task '{task_name}' scheduled successfully.")
+            print(f"Task '{self.task_name}' scheduled successfully.")
         except subprocess.CalledProcessError as e:
             print(f"Error: {e}")
         finally:
@@ -39,9 +34,9 @@ class WindowsTaskScheduler:
 
     def create_task_xml(self):
         # Create an XML task definition for Windows Task Scheduler
-        task_name = "DDNSScheduler"
-        task_description = "Scheduled task for DDNS updates"
-        task_command = "python ddns_updater.py"
+        task_name = self.task_name
+        task_description = self.task_description
+        task_command = self.command
 
         root = ET.Element("Task")
         root.set("version", "1.4")
