@@ -1,0 +1,2 @@
+from providers.provider_namecheap import NamecheapDDNS
+from providers.provider_godaddy import GoDaddyDDNS

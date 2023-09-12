@@ -7,11 +7,14 @@ The UTaskScheduler module is designed as a generic task scheduler to simplify th
 2. [Module Overview](#module-overview)
 3. [Usage Examples](#usage-examples)
     - [Scheduling Tasks](#scheduling-tasks)
-4. [Implementation Details](#implementation-details)
+4. [Scheduler Script (`scheduler.py`)](#scheduler-script)
+    - [Config File Format](#config-file-format)
+    - [Examples](#examples)
+5. [Implementation Details](#implementation-details)
     - [Windows Task Scheduler](#windows-task-scheduler)
     - [Unix Task Scheduler](#unix-task-scheduler)
     - [Mac Task Scheduler](#mac-task-scheduler)
-5. [Conclusion](#conclusion)
+6. [Conclusion](#conclusion)
 
 ## 1. Installation <a name="installation"></a>
 
@@ -19,59 +22,105 @@ The UTaskScheduler module is part of your Python project and does not require se
 
 ## 2. Module Overview <a name="module-overview"></a>
 
-The UTaskScheduler module is designed as a generic task scheduler to simplify the process of scheduling various tasks on different operating systems. It achieves this by providing a unified interface (`UTaskScheduler`) and platform-specific implementations (`WindowsTaskScheduler`, `UnixTaskScheduler`, and `MacTaskScheduler`). The module uses Python's built-in libraries and subprocess calls to interact with the underlying scheduling mechanisms of each operating system.
+The UTaskScheduler module is designed as a generic task scheduler to simplify the process of scheduling various tasks on different operating systems. It provides a unified interface and platform-specific implementations.
 
 ## 3. Usage Examples <a name="usage-examples"></a>
 
 ### Scheduling Tasks <a name="scheduling-tasks"></a>
 
-To schedule tasks on different operating systems, you can use the `UTaskScheduler` class. Define the command you want to schedule as a list of strings and pass it to the `schedule` method. Here's an example:
+To schedule tasks on different operating systems, you can use the `UTaskScheduler` class. Define the command you want to schedule as a list of strings and pass it to the `schedule` method.
 
-```python
-from scheduler.utscheduler import UTaskScheduler
+## 4. Scheduler Script (`scheduler.py`) <a name="scheduler-script"></a>
 
-# Create an instance of UTaskScheduler
-scheduler = UTaskScheduler()
+The `scheduler.py` script allows you to schedule tasks using the UTaskScheduler module. It reads a `config.ini` file to define and schedule tasks.
 
-# Define the command you want to schedule (e.g., running a script)
-task_command = ["python", "my_script.py", "--arg1", "--arg2"]
+### Config File Format
 
-# Schedule the command
-scheduler.schedule(task_command)
+The config.ini file should follow this format:
+
+```ini
+[Task1]
+name = Task 1
+action = ["python", "myscript.py", "--arg1", "--arg2", ...]
+minutes = */10
+hours = *
+days = *
+weeks = *
+months = *
+years = *
+
+; Additional tasks...
 ```
 
-## 4. Implementation Details <a name="implementation-details"></a>
+- **name**: A name for the task.
+- **action**: The command to execute, provided as a list of strings.
+- **minutes, hours, days, weeks, months, years**: Cron-like scheduling parameters. Use * for any, or provide specific values. 
+Note that cron-like intervals */5, are supported. The */X form means at Intervals of X.
+
+### Examples
+
+Example 1: Schedule a Python Script (Recurring)
+
+To schedule recurring execution of a Python script, configure your config.ini file as follows:
+
+```ini
+[Task1]
+name = Task 1
+action = ["python", "myscript.py", "--arg1", "--arg2"]
+minutes = */10
+hours = *
+days = *
+weeks = *
+months = *
+years = *
+```
+
+Example 2: Schedule a Shell Script (Recurring)
+
+To schedule the execution of a shell script, you should define a task in config.ini like this:
+
+```ini
+[Task1]
+name = Task 1
+action = ["bash", "myscript.sh"]
+minutes = */10
+hours = *
+days = *
+weeks = *
+months = *
+years = *
+```
+
+Example 3: Schedule a Batch File (Recurring)
+
+To schedule the execution of a batch file, your config.ini should contain a task like this:
+
+```ini
+[Task1]
+name = Task 1
+action = ["cmd", "/c", "myscript.bat"]
+minutes = */10
+hours = *
+days = *
+weeks = *
+months = *
+years = *
+```
+
+## 5. Implementation Details <a name="implementation-details"></a>
 
 ### Windows Task Scheduler <a name="windows-task-scheduler"></a>
 
-The `WindowsTaskScheduler` class uses the Windows Task Scheduler to create scheduled tasks. It generates an XML task definition, writes it to a temporary file, and uses the `schtasks` command to create the task. Here are the key methods:
-
-- `schedule`: Creates a scheduled task.
-- `create_task_xml`: Generates the XML task definition.
-- `write_plist_file`: Writes the XML definition to a temporary file.
-- `create_system_task`: Creates a system-level task.
-- `create_user_task`: Creates a user-level task.
+The `WindowsTaskScheduler` class uses the Windows Task Scheduler to create scheduled tasks.
 
 ### Unix Task Scheduler <a name="unix-task-scheduler"></a>
 
-The `UnixTaskScheduler` class schedules tasks on both Linux and macOS. It uses the `cron` job scheduler to add tasks to the system's crontab. Here are the key methods:
-
-- `schedule`: Schedules tasks based on the operating system.
-- `schedule_linux`: Schedules tasks on Linux using the `crontab` command.
-- `schedule_macos`: Displays a message as macOS does not support `cron` directly.
+The `UnixTaskScheduler` class schedules tasks on Linux and most Unix-Like operating system using the `cron` job scheduler.
 
 ### Mac Task Scheduler <a name="mac-task-scheduler"></a>
 
-The `MacTaskScheduler` class schedules tasks on macOS using launchd. It creates a `.plist` file describing the task and loads it into launchd. Here are the key methods:
+The `MacTaskScheduler` class schedules tasks on macOS using launchd.
 
-- `schedule`: Schedules tasks based on whether they are system-level or user-level.
-- `create_system_task`: Creates a system-level task using launchd.
-- `create_user_task`: Creates a user-level task using launchd.
-- `write_plist_file`: Writes the `.plist` file.
+## 6. Conclusion <a name="conclusion"></a>
 
-## 5. Conclusion <a name="conclusion"></a>
-
-The UTaskScheduler module simplifies the process of scheduling various tasks on Windows, macOS, and Linux. By providing a unified interface and platform-specific implementations, it allows you to manage your scheduled tasks seamlessly across different operating systems. Incorporate this module into your projects to automate various tasks and improve your system's reliability.
-```
-
-This updated manual describes the generic `UTaskScheduler` module for scheduling tasks on different operating systems without referencing any specific task, making it more versatile for various scheduling needs.
+The UTaskScheduler module simplifies the process of scheduling various tasks on Windows, macOS, and Linux. The `scheduler.py` script provides a convenient way to define and schedule tasks using a `config.ini` file. Incorporate this module into your projects to automate various tasks and improve your system's reliability.

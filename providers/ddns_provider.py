@@ -55,7 +55,7 @@ def main():
 
         # Initialize logging if not disabled
         if not args.no_log:
-            logging.basicConfig(filename='ddns_update.log', level=logging.ERROR)
+            logging.basicConfig(filename='../ddns_update.log', level=logging.ERROR)
 
         provider_classes = load_provider_classes()
 
