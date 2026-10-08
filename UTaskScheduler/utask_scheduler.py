@@ -34,6 +34,22 @@ class UTaskScheduler:
         return [self.schedule_task(command, hour, minute, dry_run=True)
                 for hour in hours for minute in minutes]
 
+    def preview_cron(self, command):
+        """Render the full validated Linux schedule without reading a crontab."""
+        tasks = self.plan(command)
+        if tasks[0]['platform'] != 'Linux':
+            raise SchedulerError('Cron preview is available only for Linux schedules.')
+        if __package__:
+            from .schedulers.scheduler_unix import UnixTaskScheduler, CronPreviewError
+        else:
+            from schedulers.scheduler_unix import UnixTaskScheduler, CronPreviewError
+        try:
+            lines = [UnixTaskScheduler([task['hour'], task['minute']], task['action']).render_cron_line()
+                     for task in tasks]
+        except CronPreviewError as error:
+            raise SchedulerError(str(error)) from None
+        return 'SHELL=/bin/sh\n' + '\n'.join(lines) + '\n'
+
     def schedule(self, command, *, dry_run=False):
         tasks = self.plan(command)
         if dry_run:
@@ -86,19 +102,28 @@ class UTaskScheduler:
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Validate a daily native task schedule")
     parser.add_argument("--config-file", default="config.ini")
-    parser.add_argument("--dry-run", action="store_true", help="Validate only; no native task installation")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--dry-run", action="store_true", help="Validate only; no native task installation")
+    mode.add_argument("--preview-cron", action="store_true", help="Print Linux user-crontab definition without installation")
     parser.add_argument("command", nargs=argparse.REMAINDER, help="Argument list after --")
     args = parser.parse_args(argv)
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     try:
-        tasks = UTaskScheduler(args.config_file).schedule(command, dry_run=args.dry_run)
+        scheduler = UTaskScheduler(args.config_file)
+        if args.preview_cron:
+            preview = scheduler.preview_cron(command)
+        else:
+            tasks = scheduler.schedule(command, dry_run=args.dry_run)
     except SchedulerUnavailableError as error:
         print(str(error), file=sys.stderr)
         return 1
     except SchedulerError as error:
         print(str(error), file=sys.stderr)
         return 2
-    print(f"Validated {len(tasks)} daily trigger(s). No tasks installed.")
+    if args.preview_cron:
+        print(preview, end="")
+    else:
+        print(f"Validated {len(tasks)} daily trigger(s). No tasks installed.")
     return 0
 
 
