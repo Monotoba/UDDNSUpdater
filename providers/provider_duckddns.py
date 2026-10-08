@@ -1,24 +1,16 @@
-from .ddns_provider import DDNSProvider
-import requests
+from .ddns_provider import DDNSProvider, ProviderError
 
 class DuckDNS(DDNSProvider):
     required_fields = ('subdomain', 'token')
 
     def update_ddns(self):
-        try:
-            subdomain = self.config['subdomain']
-            token = self.config['token']
-
-            # Obtain the current external IP
-            external_ip = self.external_ip
-
-            # DuckDNS update URL
-            update_url = f'https://www.duckdns.org/update?domains={subdomain}&token={token}&ip={external_ip}'
-
-            response = requests.get(update_url)
-            response.raise_for_status()
-
-            print(f"DuckDNS update for {subdomain}.duckdns.org successful.")
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to update DuckDNS: {str(e)}")
-
+        external_ip = self.validate_ipv4(self.external_ip)
+        text = self.request_text(
+            "https://www.duckdns.org/update",
+            params={"domains": self.config["subdomain"], "token": self.config["token"],
+                    "ip": external_ip},
+        )
+        # No verbose parameter is sent: the documented success body is exactly OK.
+        if text.strip() != "OK":
+            raise ProviderError("DuckDNS did not accept the update.")
+        return True
