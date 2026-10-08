@@ -10,7 +10,9 @@ live updates or DNS propagation checks have been performed. No release is availa
 | DuckDNS | Encoded domains/token/IP; same HTTP rules; exact OK response without verbose mode | Controlled live acceptance/propagation validation |
 | NoIP | HTTPS Basic authentication; encoded hostname/IP; client-identifying User-Agent; good/nochg plus matching IPv4 for each hostname | Approved client identification, change detection, persistent error/cooldown controls, controlled live validation |
 | Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied | Persistent error/cooldown controls, controlled live validation |
-| Other 12 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
+| ChangeIP | HTTPS Basic auth; encoded parameters; known plain-text success heading, matching IP when present | Provider response documentation/controlled live confirmation |
+| SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; exact good/nochg with matching IP when present | Full wiki access/controlled live confirmation |
+| Other 10 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
 
 The shared discovery endpoint is `https://api.ipify.org`. It returns an IPv4
 address in plain text according to [ipify's documentation](https://www.ipify.org/).
@@ -30,15 +32,15 @@ setting. The implementation sends no `verbose` flag and accepts only `OK` after
 stripping outer whitespace; `KO` or unexpected content raises a controlled error.
 See the [official DuckDNS specification](https://www.duckdns.org/spec.jsp).
 
-For shared discovery and the four repaired update adapters, connect/read timeouts
+For shared discovery and the six repaired update adapters, connect/read timeouts
 are 5/15 seconds, not a total wall-clock deadline. Redirects and non-200 statuses
 are rejected. Bodies are limited to 65,536 characters **before parsing**, after
 Requests has downloaded them; this is not a streaming/download memory limit.
 Responses are closed after use, and exceptions omit raw request URLs and bodies.
 There are no retries, IPv6 updates, cache, or propagation checks.
 
-The unrepaired adapters are Afraid, ChangeIP, CloudNS, DNSMax, EntryDNS,
-EuroDynDNS, FreeDNS, GoDaddyDDNS, GoogleDomains, SecurePoint, SpDYN, and YDNS.
+The unrepaired adapters are Afraid, CloudNS, DNSMax, EntryDNS,
+EuroDynDNS, FreeDNS, GoDaddyDDNS, GoogleDomains, SpDYN, and YDNS.
 Their provider update calls still lack the shared timeout/redirect/encoding and
 response checks. Some endpoints are explicit placeholders in the existing source.
 Do not infer supported services from class names or HTTP success alone.
@@ -68,3 +70,26 @@ with Basic authentication and the existing username/password/hostname keys.
 if an IPv4 detail is present, it must match the request. Unexpected details or
 rejection codes fail. Its 911 response requires a ten-minute suspension; that
 persistent cooldown is not implemented. No retries or automatic scheduling occur.
+
+## ChangeIP and Securepoint: limited response evidence
+
+ChangeIP's [official request guide](https://www.changeip.com/accounts/index.php?rp=/knowledgebase/34/DDNS-API-Information.html)
+confirms HTTPS, Basic authentication, hostname, and myip. It does not document
+response-body syntax. Our parser conservatively recognizes only the known first
+line `200 Successful Update`, optionally followed by `(Address Used: IPv4)`;
+an included address must match the requested one. Later diagnostic lines are
+ignored. This heading appears in [DrayTek's manufacturer manual](https://draytek.com/download_de/Firmwares-Router/Vigor2962/DrayTek_UG_Vigor2962_V1.61.pdf),
+an integration example rather than a current ChangeIP response specification.
+Unknown/HTML bodies fail. Controlled live confirmation or a provider response
+specification is needed before claiming complete service compatibility.
+
+Securepoint's indexed official wiki identifies `https://update.spdyn.de/nic/update`
+and good/nochg status codes, replacing the prototype's unrelated securepoint.de
+URL. The full pages were blocked by the wiki's access check during this review.
+See [host usage](https://wiki.securepoint.de/SPDyn/Hostverwenden) and
+[return codes](https://wiki.securepoint.de/SPDyn/R%C3%BCckgabecodes).
+The conservative parser accepts only a single good/nochg token with an optional
+matching IPv4. This is an offline-tested policy, not a verified complete response
+contract. Existing username/password/hostname keys remain unchanged; configure
+credentials appropriate for the host in your Securepoint account. The separate
+SpDYN class remains unrepaired despite the related provider name.

@@ -1,30 +1,17 @@
-from .ddns_provider import DDNSProvider
-import requests
+from .ddns_provider import DDNSProvider, ProviderError
 
 class SecurePoint(DDNSProvider):
     required_fields = ('username', 'password', 'hostname')
 
     def update_ddns(self):
-        try:
-            username = self.config['username']
-            password = self.config['password']
-            hostname = self.config['hostname']
-
-            # Obtain the current external IP
-            external_ip = self.external_ip
-
-            # SecurePoint DynDNS update URL
-            update_url = f'https://www.securepoint.de/cgi-bin/noip.pl?hostname={hostname}&myip={external_ip}'
-
-            auth = (username, password)
-
-            response = requests.get(update_url, auth=auth)
-            response.raise_for_status()
-
-            if 'good' in response.text:
-                print(f"SecurePoint DynDNS update for {hostname} successful.")
-            else:
-                print(f"SecurePoint DynDNS update failed. Response: {response.text}")
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to update SecurePoint DynDNS: {str(e)}")
-
+        external_ip = self.validate_ipv4(self.external_ip)
+        text = self.request_text(
+            "https://update.spdyn.de/nic/update",
+            params={"hostname": self.config["hostname"], "myip": external_ip},
+            auth=(self.config["username"], self.config["password"]),
+        )
+        parts = text.strip().split()
+        if (len(parts) not in (1, 2) or parts[0] not in ("good", "nochg")
+                or (len(parts) == 2 and parts[1] != external_ip)):
+            raise ProviderError("Securepoint did not return a recognized acceptance response.")
+        return True
