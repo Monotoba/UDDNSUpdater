@@ -28,11 +28,16 @@ class DDNSProvider:
         except (ValueError, TypeError):
             raise ProviderError("Invalid IPv4 address.") from None
 
-    def request_text(self, url, params=None):
+    def request_text(self, url, params=None, *, auth=None, headers=None):
         response = None
         try:
-            response = requests.get(url, params=params, timeout=self.request_timeout,
-                                    allow_redirects=False)
+            options = {"params": params, "timeout": self.request_timeout,
+                       "allow_redirects": False}
+            if auth is not None:
+                options["auth"] = auth
+            if headers is not None:
+                options["headers"] = headers
+            response = requests.get(url, **options)
             if response.status_code != 200:
                 raise ProviderError("Provider HTTP request was not accepted.")
             text = response.text
