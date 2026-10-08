@@ -2,6 +2,8 @@ from .ddns_provider import DDNSProvider
 import requests
 
 class DuckDNS(DDNSProvider):
+    required_fields = ('subdomain', 'token')
+
     def update_ddns(self):
         try:
             subdomain = self.config['subdomain']

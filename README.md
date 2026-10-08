@@ -9,7 +9,8 @@ A Python prototype for updating dynamic-DNS records through multiple provider
 adapters, with a separate experimental task-scheduling component.
 
 **Work in progress — not ready for unattended or production use.** Provider
-loading and help commands have an offline test baseline. Live provider requests,
+loading, configuration validation, dry runs, and CLI failure handling have an offline
+test baseline. Live provider requests,
 credentials, response validation, and native scheduling have not been validated.
 There is no release or PyPI package.
 
@@ -25,10 +26,12 @@ python -m pytest -q
 python ddns_updater.py --help
 ```
 
-The help command does not contact providers or write log files. This project has
-no dry-run option. Running without `--help` reads `config.ini` from the current
-directory and can send real DNS update requests; avoid real credentials during
-development. Config files and logs can contain sensitive information.
+The help command and `--dry-run` do not contact providers or write log files.
+Use `python ddns_updater.py --config-file /path/to/settings.ini --dry-run` to
+validate a configuration. See [CLI configuration and status codes](docs/CLI.md).
+Running without `--help` or `--dry-run` can send real DNS update requests; avoid
+real credentials during development. The default config path is `config.ini`
+in the current directory.
 
 ## Current implementation
 
@@ -38,10 +41,13 @@ name, such as `NamecheapDDNS`, rather than the lowercase names in the old manual
 Provider loading now resolves the bundled directory independently of the working
 directory. Imports use one shared base class.
 
-`--no-log` is the only application option besides `--help`; it disables file
-logging, but errors still print to stderr. Legacy logging/config-file flags
-described in the manual are not implemented. The manuals are design drafts with
-unfinished examples, not validated operating instructions.
+`--no-log` disables file logging; controlled errors still print to stderr.
+`--config-file` selects a UTF-8 INI file, and `--dry-run` checks all service
+sections before any provider is constructed. Raw adapter output is suppressed
+by the CLI because it may contain provider response bodies or credentials.
+The older manuals remain design drafts, not validated operating instructions.
+A zero exit code from a real run currently means adapters returned without
+raising; it does not establish provider success or DNS propagation.
 
 The scheduler modules have incompatible method/constructor signatures. Do not
 use them to install system tasks yet. See [ROADMAP.md](ROADMAP.md) for the repair

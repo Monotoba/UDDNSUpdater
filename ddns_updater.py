@@ -3,8 +3,8 @@ import configparser
 import logging
 import importlib
 from pathlib import Path
-import os
-import platform
+import contextlib
+import io
 import sys
 
 from providers.ddns_provider import DDNSProvider
@@ -25,51 +25,98 @@ def load_provider_classes():
     return provider_classes
 
 
-def main():
+class ConfigurationError(ValueError):
+    """A configuration problem with a credential-safe public message."""
+
+
+def load_services(config_path, provider_classes):
+    config = configparser.ConfigParser(interpolation=None)
+    try:
+        with open(config_path, encoding="utf-8") as handle:
+            config.read_file(handle)
+    except (OSError, UnicodeError, configparser.Error):
+        raise ConfigurationError("Cannot read a valid UTF-8 configuration file.") from None
+    if not config.sections():
+        raise ConfigurationError("Configuration must contain at least one service section.")
+
+    services = []
+    for index, section in enumerate(config.sections(), 1):
+        settings = dict(config[section])
+        provider_class = provider_classes.get(settings.get("ddns_provider", "").strip())
+        if provider_class is None:
+            raise ConfigurationError(f"Service {index}: missing or unsupported ddns_provider.")
+        for key in provider_class.required_fields:
+            value = settings.get(key, "")
+            if not value.strip() or value.strip().upper().startswith("YOUR_"):
+                raise ConfigurationError(f"Service {index}: missing or placeholder {key}.")
+        services.append((section, provider_class, settings))
+    return services
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser(description="DDNS Updater")
-    parser.add_argument("--no-log", action="store_true", help="Disable logging")
-    args = parser.parse_args()
+    parser.add_argument("--no-log", action="store_true", help="Disable file logging")
+    parser.add_argument("--config-file", default="config.ini", help="Configuration file (default: config.ini)")
+    parser.add_argument("--dry-run", action="store_true", help="Validate configuration only; no network or file writes")
+    args = parser.parse_args(argv)
 
     try:
-        config = configparser.ConfigParser()
-        config.read('config.ini')
-
-        # Determine the current operating system
-        current_os = platform.system()
-
-        # Initialize logging if not disabled
-        if not args.no_log:
-            logging.basicConfig(filename='ddns_update.log', level=logging.ERROR)
-
         provider_classes = load_provider_classes()
+    except Exception:
+        print("Cannot load provider adapters.", file=sys.stderr)
+        return 1
+    try:
+        services = load_services(args.config_file, provider_classes)
+    except ConfigurationError as error:
+        print(str(error), file=sys.stderr)
+        return 2
 
-        for section in config.sections():
-            service_name = section
-            service_settings = config[section]
+    if args.dry_run:
+        print(f"Configuration valid for {len(services)} service(s). No requests sent.")
+        return 0
 
-            provider_name = service_settings['ddns_provider']
-            if provider_name not in provider_classes:
-                print(f"Unsupported DDNS provider: {provider_name}", file=sys.stderr)
-                continue
+    # A dedicated handler avoids changing the caller's root logger or retaining
+    # handles between invocations. Open it before any DNS-related request.
+    handler = None
+    if not args.no_log:
+        try:
+            handler = logging.FileHandler("ddns_update.log", encoding="utf-8")
+            handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        except Exception:
+            print("Cannot open error log; no updates attempted.", file=sys.stderr)
+            return 1
 
-            provider_class = provider_classes[provider_name]
-            provider = provider_class(service_name, service_settings)
-
+    failed = False
+    try:
+        for index, (section, provider_class, settings) in enumerate(services, 1):
             try:
-                provider.update_ddns()
-            except Exception as e:
-                error_message = f"Error updating {service_name}: {str(e)}"
-                if not args.no_log:
-                    logging.error(error_message)
-                print(error_message, file=sys.stderr)
-
-        # Close the log file if logging is enabled
-        if not args.no_log:
-            logging.shutdown()
-    except Exception as e:
-        print(f"An error occurred: {str(e)}", file=sys.stderr)
+                # Legacy adapters print raw provider bodies and exception URLs.
+                # Suppress these until provider contracts are repaired; emit only
+                # controlled CLI messages, including constructor failures.
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                    provider = provider_class(section, settings)
+                    provider.update_ddns()
+                print(f"Service {index}: adapter completed; provider success is not yet verified.")
+            except Exception:
+                failed = True
+                message = f"Service {index}: update failed; provider details withheld."
+                print(message, file=sys.stderr)
+                if handler is not None:
+                    try:
+                        record = logging.LogRecord("UDDNSUpdater", logging.ERROR, "", 0, message, (), None)
+                        handler.stream.write(handler.format(record) + "\n")
+                        handler.flush()
+                    except Exception:
+                        print("Cannot write error log.", file=sys.stderr)
+    finally:
+        if handler is not None:
+            try:
+                handler.close()
+            except Exception:
+                failed = True
+                print("Cannot close error log.", file=sys.stderr)
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
-    main()
-
+    sys.exit(main())

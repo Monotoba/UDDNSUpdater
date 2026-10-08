@@ -2,6 +2,8 @@ from .ddns_provider import DDNSProvider
 import requests
 
 class EuroDynDNS(DDNSProvider):
+    required_fields = ('username', 'password', 'hostname')
+
     def __init__(self, name, config):
         super().__init__(name, config)
         self.username = self.config['username']

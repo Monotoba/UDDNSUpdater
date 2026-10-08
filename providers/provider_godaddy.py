@@ -2,6 +2,8 @@ from .ddns_provider import DDNSProvider
 import requests
 
 class GoDaddyDDNS(DDNSProvider):
+    required_fields = ('api_key', 'api_secret', 'domain')
+
     def update_ddns(self):
         try:
             api_key = self.config['api_key']
