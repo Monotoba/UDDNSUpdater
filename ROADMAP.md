@@ -17,9 +17,12 @@
    classes have been audited: 14 active adapters repaired, 2 retired services
    disabled. Full response specifications and live validation remain outstanding
    for several services; persistent change/error controls are also unfinished.
-4. **Scheduler:** reconcile existing interfaces, validate schedule fields, fix
-   cron/launchd/Windows command generation, and avoid shell interpolation.
-   Test with mocked subprocesses and temporary files before native integration.
+4. **Scheduler, partial:** unified daily hour/minute validation and planning-only
+   dry run are implemented, with argument boundaries preserved and no native writes.
+   Installation remains blocked. Repair cron/launchd/Windows definition generation
+   next, reconcile the legacy Task-section format, and add persistent DDNS
+   change/error controls before controlled native integration. See
+   [scheduler status](docs/SCHEDULER.md).
 5. **Documentation/release:** replace draft manuals with tested examples, add
    packaging and build checks, and complete controlled provider/native scheduler
    validation. Release only the scope supported by evidence.

@@ -1,5 +1,6 @@
 > **Design draft:** This document describes planned or incomplete behavior.
 > Use the [README](../README.md) and [repair roadmap](../ROADMAP.md) for current status.
+> For the implemented planning-only path, see [SCHEDULER.md](SCHEDULER.md).
 > Provider APIs and native scheduling have not been validated.
 
 # UTaskScheduler Module User Manual
