@@ -28,7 +28,8 @@ class DDNSProvider:
         except (ValueError, TypeError):
             raise ProviderError("Invalid IPv4 address.") from None
 
-    def request_text(self, url, params=None, *, auth=None, headers=None):
+    def request_text(self, url, params=None, *, auth=None, headers=None,
+                     method="GET", payload=None, accepted_status=(200,)):
         response = None
         try:
             options = {"params": params, "timeout": self.request_timeout,
@@ -37,8 +38,11 @@ class DDNSProvider:
                 options["auth"] = auth
             if headers is not None:
                 options["headers"] = headers
-            response = requests.get(url, **options)
-            if response.status_code != 200:
+            if method == "PUT":
+                response = requests.put(url, json=payload, **options)
+            else:
+                response = requests.get(url, **options)
+            if response.status_code not in accepted_status:
                 raise ProviderError("Provider HTTP request was not accepted.")
             text = response.text
             if len(text) > self.max_response_chars:

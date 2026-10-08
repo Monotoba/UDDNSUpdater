@@ -45,6 +45,9 @@ def load_services(config_path, provider_classes):
         provider_class = provider_classes.get(settings.get("ddns_provider", "").strip())
         if provider_class is None:
             raise ConfigurationError(f"Service {index}: missing or unsupported ddns_provider.")
+        disabled_reason = getattr(provider_class, "disabled_reason", None)
+        if disabled_reason:
+            raise ConfigurationError(f"Service {index}: {disabled_reason}")
         normalize = getattr(provider_class, "normalize_settings", None)
         if normalize is not None:
             settings = normalize(settings)

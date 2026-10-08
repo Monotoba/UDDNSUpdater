@@ -14,7 +14,9 @@ live updates or DNS propagation checks have been performed. No release is availa
 | SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; exact good/nochg with matching IP when present | Full wiki access/controlled live confirmation |
 | SpDYN | Reuses the repaired SecurePoint implementation with its legacy class name/settings | Same wiki-access/live-validation limitations as SecurePoint |
 | YDNS | Documented trailing-slash HTTPS endpoint; host/IP parameters; Basic auth; exact good response; corrected credential settings with legacy aliases | Controlled live validation; optional record_id selection not implemented |
-| Other 8 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
+| GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance | Controlled live validation; PAT/v3 migration; named multi-value A sets are replaced |
+| GoogleDomains | Disabled before network access; retained discoverable class and migration error | Service unavailable for migrated domains |
+| Other 6 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
 
 The shared discovery endpoint is `https://api.ipify.org`. It returns an IPv4
 address in plain text according to [ipify's documentation](https://www.ipify.org/).
@@ -34,7 +36,7 @@ setting. The implementation sends no `verbose` flag and accepts only `OK` after
 stripping outer whitespace; `KO` or unexpected content raises a controlled error.
 See the [official DuckDNS specification](https://www.duckdns.org/spec.jsp).
 
-For shared discovery and the eight repaired update adapters, connect/read timeouts
+For shared discovery and the nine repaired update adapters, connect/read timeouts
 are 5/15 seconds, not a total wall-clock deadline. Redirects and non-200 statuses
 are rejected. Bodies are limited to 65,536 characters **before parsing**, after
 Requests has downloaded them; this is not a streaming/download memory limit.
@@ -42,7 +44,7 @@ Responses are closed after use, and exceptions omit raw request URLs and bodies.
 There are no retries, IPv6 updates, cache, or propagation checks.
 
 The unrepaired adapters are Afraid, CloudNS, DNSMax, EntryDNS,
-EuroDynDNS, FreeDNS, GoDaddyDDNS, and GoogleDomains.
+EuroDynDNS, and FreeDNS.
 Their provider update calls still lack the shared timeout/redirect/encoding and
 response checks. Some endpoints are explicit placeholders in the existing source.
 Do not infer supported services from class names or HTTP success alone.
@@ -106,3 +108,24 @@ HTTP checks. It does not send the old undocumented domain/apikey query fields.
 Use the API username/password from your account and a hostname, not a domain ID.
 Legacy aliases and migration details are in [CLI.md](CLI.md). Optional record_id
 selection and IPv6 updating are outside the current implementation.
+
+## GoDaddy and retired Google Domains
+
+GoDaddy's [v1 named-record replacement reference](https://developer.godaddy.com/en/docs/references/rest/domains/v1/record-replace-type-name)
+scopes PUT to domain/type/name. This implementation uses type A and an explicit
+hostname, replacing that named set with one IPv4 and TTL 600. It does not replace
+all A records across the domain. The reference's prose says 204 No Content while
+its response table lists 200; both are accepted only with an empty body. A readback
+or propagation check is not implemented, so this is request acceptance only.
+
+[Authentication documentation](https://developer.godaddy.com/en/docs/api-users/auth)
+still lists classic sso-key credentials for Domains v1/v2, deprecated through
+2026. The existing api_key/api_secret settings are retained; PAT/v3 migration is
+future work. Use credentials for the correct account/environment. No live access
+or API entitlement has been validated for this project.
+
+[Squarespace's migration guide](https://support.squarespace.com/hc/en-us/articles/17131164996365-About-the-Google-Domains-migration-to-Squarespace)
+says DDNS is unavailable for migrated Google Domains. GoogleDomains is therefore
+retained as a disabled class with explicit configuration/direct-call errors before
+network access. Existing static records and registrar settings are not changed.
+The six unaudited adapters listed above are distinct from this retired service.

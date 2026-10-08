@@ -44,8 +44,9 @@ Every row also requires `ddns_provider` set to the indicated class name.
 | --- | --- |
 | Afraid, ChangeIP, CloudNS, DNSMax, Dynu, EntryDNS, EuroDynDNS, NoIP, SecurePoint, SpDYN | username, password, hostname |
 | DuckDNS | subdomain, token |
-| FreeDNS, GoogleDomains | api_key, hostname |
-| GoDaddyDDNS | api_key, api_secret, domain |
+| FreeDNS | api_key, hostname |
+| GoogleDomains | Unavailable; retained for clear migration errors |
+| GoDaddyDDNS | api_key, api_secret, domain, hostname |
 | NamecheapDDNS | domain, password, hostname |
 | YDNS | hostname, username, password |
 
@@ -65,7 +66,7 @@ errors go to `ddns_update.log` there; `--no-log` disables file logging. Configur
 errors and dry runs do not open the log. A log-open failure blocks all updates.
 Log handles close after each CLI invocation. Raw exception strings, section names,
 adapter prints, and provider bodies are withheld by the CLI. The repaired
-Namecheap/DuckDNS/No-IP/Dynu/ChangeIP/Securepoint/SpDYN/YDNS adapters also emit controlled exceptions on direct calls.
+the repaired adapters adapters also emit controlled exceptions on direct calls.
 Other direct adapter calls bypass this protection and should not use real credentials.
 
 | Exit code | Meaning |
@@ -74,9 +75,9 @@ Other direct adapter calls bypass this protection and should not use real creden
 | 1 | Adapter-loading, runtime, or logging failure |
 | 2 | Invalid/unreadable configuration or command-line arguments |
 
-Namecheap/DuckDNS/No-IP/Dynu/ChangeIP/Securepoint/SpDYN/YDNS now return explicit acceptance only after their response checks
+the repaired adapters now return explicit acceptance only after their response checks
 pass, and rejected/malformed responses produce code 1. Acceptance does not verify
-DNS propagation. The other 8 legacy adapters can print rejection and return
+DNS propagation. The other 6 legacy adapters can print rejection and return
 normally, so code 0 does **not** confirm success for those services. Their request
 contracts are still pending review. A failure exit also does not prove DNS stayed
 unchanged. See [provider repair status](PROVIDERS.md).
@@ -95,3 +96,19 @@ The old two-key configuration cannot supply the required authentication username
 and fails validation before any requests. Numeric domain IDs are also rejected.
 Use a hostname such as example.ydns.io and credentials from the YDNS API page.
 `record_id` selection is not implemented; do not use a record ID as the hostname.
+
+## GoDaddy and Google Domains corrections
+
+GoDaddy now requires an explicit `hostname` (relative record name, e.g. @ or www)
+in addition to the existing api_key/api_secret/domain settings. It replaces all
+A records **at that name** with one IPv4 value and TTL 600, preserving other names
+and record types. This is unsuitable for a multi-value A-record set you need to
+retain. The old domain-wide A-record replacement is no longer used. Missing
+hostname fails validation before any requests. Classic key/secret authentication
+is retained for the v1 API; PAT/v3 migration is not implemented.
+
+GoogleDomains is unavailable for both dry-run and real-run configurations.
+Migrated Google Domains no longer supports DDNS according to Squarespace. The
+class remains discoverable, but rejects before network access. Select a supported
+provider rather than reusing old Google credentials or assuming a Squarespace
+API replacement exists. No DNS or registrar migration is performed by this tool.
