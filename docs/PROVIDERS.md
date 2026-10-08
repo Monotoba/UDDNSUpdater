@@ -16,7 +16,8 @@ live updates or DNS propagation checks have been performed. No release is availa
 | YDNS | Documented trailing-slash HTTPS endpoint; host/IP parameters; Basic auth; exact good response; corrected credential settings with legacy aliases | Controlled live validation; optional record_id selection not implemented |
 | GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance | Controlled live validation; PAT/v3 migration; named multi-value A sets are replaced |
 | GoogleDomains | Disabled before network access; retained discoverable class and migration error | Service unavailable for migrated domains |
-| Other 6 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
+| Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks | Controlled live response confirmation; account linked-update scope; v2 not implemented |
+| Other 4 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
 
 The shared discovery endpoint is `https://api.ipify.org`. It returns an IPv4
 address in plain text according to [ipify's documentation](https://www.ipify.org/).
@@ -36,15 +37,14 @@ setting. The implementation sends no `verbose` flag and accepts only `OK` after
 stripping outer whitespace; `KO` or unexpected content raises a controlled error.
 See the [official DuckDNS specification](https://www.duckdns.org/spec.jsp).
 
-For shared discovery and the nine repaired update adapters, connect/read timeouts
+For shared discovery and the eleven repaired update adapters, connect/read timeouts
 are 5/15 seconds, not a total wall-clock deadline. Redirects and non-200 statuses
 are rejected. Bodies are limited to 65,536 characters **before parsing**, after
 Requests has downloaded them; this is not a streaming/download memory limit.
 Responses are closed after use, and exceptions omit raw request URLs and bodies.
 There are no retries, IPv6 updates, cache, or propagation checks.
 
-The unrepaired adapters are Afraid, CloudNS, DNSMax, EntryDNS,
-EuroDynDNS, and FreeDNS.
+The unrepaired adapters are CloudNS, DNSMax, EntryDNS, and EuroDynDNS.
 Their provider update calls still lack the shared timeout/redirect/encoding and
 response checks. Some endpoints are explicit placeholders in the existing source.
 Do not infer supported services from class names or HTTP success alone.
@@ -128,4 +128,33 @@ or API entitlement has been validated for this project.
 says DDNS is unavailable for migrated Google Domains. GoogleDomains is therefore
 retained as a disabled class with explicit configuration/direct-call errors before
 network access. Existing static records and registrar settings are not changed.
-The six unaudited adapters listed above are distinct from this retired service.
+The four unaudited adapters listed above are distinct from this retired service.
+
+## FreeDNS.afraid.org (Afraid and FreeDNS)
+
+Both class names now use the same API-v1 direct-key adapter. The
+[provider router guide](https://freedns.afraid.org/guide/dd-wrt/) identifies the
+update key as the portion after `?` in the Direct URL. The
+[dynamic DNS help](https://freedns.afraid.org/faq/help.php?help_id=1) documents the
+`address` override. Configure `api_key` with that key alone and `hostname` with
+its associated A-record name. Afraid's old username/password configuration must
+be migrated; FreeDNS's old Bearer authentication has been removed. No account
+password is sent. Full URLs, query options, whitespace and control characters are
+rejected as keys. This adapter does not implement v2 sync URLs.
+
+The provider's public pages do not specify a full response grammar. Our
+conservative offline parser accepts a single Updated line containing the exact
+configured hostname and requested IP (optionally a host count), or the exact
+`ERROR: Address IPv4 has not changed.` notice with the requested address.
+This policy is informed by [ddclient's integration implementation](https://github.com/ddclient/ddclient/blob/main/ddclient.in)
+and [IPFire's original v1 integration](https://lists.ipfire.org/ddns/CAHoP%2BV-mkAxCEntnh%3DCV3opBtVYFExLm8h%3D1atyL4EaNE79OoA%40mail.gmail.com/),
+not a verified provider response specification. Unknown or multi-line bodies fail;
+controlled live confirmation remains necessary.
+
+The [provider FAQ](https://freedns.afraid.org/faq/) says linked updates are enabled
+by default: records sharing the old destination IP can change together. Disable
+linked updates in the provider's Dynamic DNS page when updates must be isolated.
+A hostname in this configuration does not override that account setting, and a
+no-change notice does not independently identify a record. Keep the key paired
+with the correct hostname. The guide also describes a short cache for repeated
+updates; no retries or scheduler are added here.
