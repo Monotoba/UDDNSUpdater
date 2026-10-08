@@ -1,4 +1,4 @@
-from ddns_updater import DDNSProvider
+from .ddns_provider import DDNSProvider
 import requests
 
 class GoogleDomains(DDNSProvider):
@@ -35,3 +35,4 @@ class GoogleDomains(DDNSProvider):
                 print(f"Google Domains DDNS update failed. Response: {response.text}")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to update Google Domains DDNS: {str(e)}")
+

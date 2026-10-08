@@ -1,3 +1,7 @@
+> **Design draft:** This document describes planned or incomplete behavior.
+> Use the [README](../README.md) and [repair roadmap](../ROADMAP.md) for current status.
+> Provider APIs and native scheduling have not been validated.
+
 # Dynamic DNS Provider Integration Guide
 
 ## Table of Contents
@@ -184,3 +188,4 @@ You can also specify command-line arguments for custom configurations, including
 ---
 
 Please note that this is a revised outline, and you'll need to fill in the content for each section, including detailed configuration examples, explanations, and links to provider documentation. Additionally, the document's length will depend on the level of detail you provide for each section and example.
+

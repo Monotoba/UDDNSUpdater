@@ -1,3 +1,7 @@
+> **Design draft:** This document describes planned or incomplete behavior.
+> Use the [README](../README.md) and [repair roadmap](../ROADMAP.md) for current status.
+> Provider APIs and native scheduling have not been validated.
+
 # UTaskScheduler Module User Manual
 
 The UTaskScheduler module is designed as a generic task scheduler to simplify the process of scheduling tasks on different operating systems. This user manual will guide you through the usage of the module, explain its implementation, and provide code examples for incorporating it into your projects.
@@ -124,3 +128,4 @@ The `MacTaskScheduler` class schedules tasks on macOS using launchd.
 ## 6. Conclusion <a name="conclusion"></a>
 
 The UTaskScheduler module simplifies the process of scheduling various tasks on Windows, macOS, and Linux. The `scheduler.py` script provides a convenient way to define and schedule tasks using a `config.ini` file. Incorporate this module into your projects to automate various tasks and improve your system's reliability.
+

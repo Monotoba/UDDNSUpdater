@@ -1,4 +1,4 @@
-from ddns_updater import DDNSProvider
+from .ddns_provider import DDNSProvider
 import requests
 
 class DuckDNS(DDNSProvider):
@@ -19,3 +19,4 @@ class DuckDNS(DDNSProvider):
             print(f"DuckDNS update for {subdomain}.duckdns.org successful.")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to update DuckDNS: {str(e)}")
+

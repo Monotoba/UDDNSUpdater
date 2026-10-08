@@ -1,6 +1,8 @@
 import argparse
 import configparser
 import logging
+import importlib
+from pathlib import Path
 import os
 import platform
 import sys
@@ -10,16 +12,15 @@ from providers.ddns_provider import DDNSProvider
 
 def load_provider_classes():
     provider_classes = {}
-    provider_dir = 'providers'
+    provider_dir = Path(__file__).resolve().parent / "providers"
 
-    # Dynamically import all provider classes from the providers directory
-    for filename in os.listdir(provider_dir):
-        if filename.startswith("provider_") and filename.endswith(".py"):
-            module_name = filename[:-3]  # Remove .py extension
-            module = __import__(f"{provider_dir}.{module_name}", fromlist=["Provider"])
-            for name, cls in vars(module).items():
-                if isinstance(cls, type) and issubclass(cls, DDNSProvider) and cls is not DDNSProvider:
-                    provider_classes[name] = cls
+    # Resolve bundled modules relative to this file, independently of cwd.
+    for path in sorted(provider_dir.glob("provider_*.py")):
+        module = importlib.import_module(f"providers.{path.stem}")
+        for name, cls in vars(module).items():
+            if (isinstance(cls, type) and issubclass(cls, DDNSProvider)
+                    and cls is not DDNSProvider and cls.__module__ == module.__name__):
+                provider_classes[name] = cls
 
     return provider_classes
 
@@ -71,3 +72,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -1,4 +1,4 @@
-from ddns_updater import DDNSProvider
+from .ddns_provider import DDNSProvider
 import requests
 
 class NamecheapDDNS(DDNSProvider):
@@ -20,3 +20,4 @@ class NamecheapDDNS(DDNSProvider):
             print(f"Namecheap DDNS update for {hostname}.{domain} successful.")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to update Namecheap DDNS: {str(e)}")
+
