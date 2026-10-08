@@ -1,8 +1,9 @@
 # Scheduler validation baseline
 
-The first repair supports **planning only**, with no native task installation.
-The platform backends still need repair; their direct APIs must not be used to
-install tasks. DDNS providers also lack persistent change/error controls required
+Daily planning and Linux user-crontab previews are implemented, with no native
+task installation. The Linux backend now also blocks direct installation calls.
+macOS and Windows backends still need repair; their direct APIs must not be used
+to install tasks. DDNS providers lack persistent change/error controls required
 for unattended use.
 
 ## Configuration
@@ -69,8 +70,8 @@ command arguments.
 
 ## Remaining repair order
 
-1. Repair native command/definition generation: Linux crontab, macOS launchd,
-   then Windows Task Scheduler, with offline tests and reviewable previews.
+1. Linux user-crontab generation and preview are implemented. Repair macOS
+   launchd and Windows Task Scheduler definitions next, with offline tests.
 2. Reconcile the older Task-section parser, names, paths, and unsupported date/
    calendar features with the unified API; add complete upfront validation.
 3. Add persistent DDNS change detection and provider error/cooldown controls.
@@ -80,3 +81,43 @@ command arguments.
 
 Tests prohibit native task mutations. No live task installation or DNS updates
 were performed for this baseline.
+
+## Linux user-crontab preview
+
+```sh
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --preview-cron -- /absolute/path/to/python /absolute/path/to/job.py
+```
+
+`--preview-cron` and `--dry-run` are mutually exclusive. Preview validates the
+complete configuration first and prints a definition only after all entries have
+been generated. It does not read, replace, or append to a user's crontab, create
+files, or run subprocesses. This mode requires a Linux schedule and an absolute
+executable path; argument paths and executable existence are not checked. Use
+absolute paths for the script, DDNS configuration, and other job resources because
+a cron job's working directory and environment differ from an interactive shell.
+
+The output starts with `SHELL=/bin/sh` and contains one five-field daily entry
+per trigger, with a final newline. It is a user-crontab snippet, not a system
+crontab (which requires a username), and not a replacement for an existing full
+crontab. A SHELL setting affects subsequent entries when combined with an existing
+file. Existing-entry preservation, duplicate handling, environment integration,
+and native installation/removal are not implemented.
+
+The [cron manual](https://man7.org/linux/man-pages/man5/crontab.5.html) specifies
+that percent characters are processed before the command reaches the shell.
+The renderer quotes each argument and isolates escaped percent characters so
+literal backslashes before percent remain intact. Tests model cron's escape scan
+and also run a harmless argv round trip through /bin/sh on Linux/macOS; the actual
+shell check is skipped on Windows. No cron daemon was installed or invoked.
+
+Unlike the ordinary dry run, this explicit preview prints command arguments.
+Keep credentials in protected configuration files rather than command arguments.
+Normal installation is still blocked; the preview does not establish readiness
+for unattended DDNS updates or validate native scheduling behavior.
+
+The Python API `scheduler.preview_cron(command)` returns this definition.
+`UnixTaskScheduler([hour, minute], command).render_cron()` generates one daily
+entry; `render_cron_line()` returns its entry without the header/newline. The
+backend's `schedule(dry_run=True)` and `schedule_linux(dry_run=True)` return a
+preview. Calls without dry_run raise CronPreviewError; system-task generation
+is explicitly unavailable. Arguments must be a list or tuple, not a shell string.

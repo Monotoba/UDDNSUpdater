@@ -19,8 +19,9 @@
    for several services; persistent change/error controls are also unfinished.
 4. **Scheduler, partial:** unified daily hour/minute validation and planning-only
    dry run are implemented, with argument boundaries preserved and no native writes.
-   Installation remains blocked. Repair cron/launchd/Windows definition generation
-   next, reconcile the legacy Task-section format, and add persistent DDNS
+   Linux user-crontab generation and preview are now implemented; installation
+   remains blocked. Repair launchd/Windows definitions next, reconcile the legacy
+   Task-section format, and add persistent DDNS
    change/error controls before controlled native integration. See
    [scheduler status](docs/SCHEDULER.md).
 5. **Documentation/release:** replace draft manuals with tested examples, add
