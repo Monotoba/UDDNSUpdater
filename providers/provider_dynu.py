@@ -1,36 +1,18 @@
-from .ddns_provider import DDNSProvider
-import requests
+from .ddns_provider import DDNSProvider, ProviderError
 
 class Dynu(DDNSProvider):
     required_fields = ('username', 'password', 'hostname')
 
     def update_ddns(self):
-        try:
-            username = self.config['username']
-            password = self.config['password']
-            hostname = self.config['hostname']
-
-            # Obtain the current external IP
-            external_ip = self.external_ip
-
-            # Dynu update URL
-            update_url = f'https://api.dynu.com/nic/update'
-            params = {
-                'hostname': hostname,
-                'myip': external_ip,
-                'username': username,
-                'password': password,
-            }
-
-            response = requests.get(update_url, params=params)
-            response.raise_for_status()
-
-            if response.text.startswith('good'):
-                print(f"Dynu DDNS update for {hostname} successful.")
-            elif response.text.startswith('nochg'):
-                print(f"Dynu DDNS update for {hostname} skipped (IP address unchanged).")
-            else:
-                print(f"Dynu DDNS update failed. Response: {response.text}")
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to update Dynu DDNS: {str(e)}")
-
+        external_ip = self.validate_ipv4(self.external_ip)
+        text = self.request_text(
+            "https://api.dynu.com/nic/update",
+            params={"hostname": self.config["hostname"], "myip": external_ip,
+                    "myipv6": "no"},
+            auth=(self.config["username"], self.config["password"]),
+        )
+        parts = text.strip().split()
+        if (len(parts) not in (1, 2) or parts[0] not in ("good", "nochg")
+                or (len(parts) == 2 and parts[1] != external_ip)):
+            raise ProviderError("Dynu did not accept the requested IPv4 update.")
+        return True

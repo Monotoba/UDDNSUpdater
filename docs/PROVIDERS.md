@@ -8,7 +8,9 @@ live updates or DNS propagation checks have been performed. No release is availa
 | Shared IPv4 discovery | HTTPS ipify IPv4 endpoint; strict IPv4 parsing; HTTP 200 required; redirects disabled; connect/read timeouts | Controlled live check |
 | NamecheapDDNS | Encoded parameters; same HTTP rules; XML structure, zero error count, Done=true, matching IP, no error entries; rejects malformed/duplicate required fields and DOCTYPE | Controlled live response/propagation validation |
 | DuckDNS | Encoded domains/token/IP; same HTTP rules; exact OK response without verbose mode | Controlled live acceptance/propagation validation |
-| Other 14 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
+| NoIP | HTTPS Basic authentication; encoded hostname/IP; client-identifying User-Agent; good/nochg plus matching IPv4 for each hostname | Approved client identification, change detection, persistent error/cooldown controls, controlled live validation |
+| Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied | Persistent error/cooldown controls, controlled live validation |
+| Other 12 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
 
 The shared discovery endpoint is `https://api.ipify.org`. It returns an IPv4
 address in plain text according to [ipify's documentation](https://www.ipify.org/).
@@ -28,15 +30,41 @@ setting. The implementation sends no `verbose` flag and accepts only `OK` after
 stripping outer whitespace; `KO` or unexpected content raises a controlled error.
 See the [official DuckDNS specification](https://www.duckdns.org/spec.jsp).
 
-For shared discovery and the two repaired update adapters, connect/read timeouts
+For shared discovery and the four repaired update adapters, connect/read timeouts
 are 5/15 seconds, not a total wall-clock deadline. Redirects and non-200 statuses
 are rejected. Bodies are limited to 65,536 characters **before parsing**, after
 Requests has downloaded them; this is not a streaming/download memory limit.
 Responses are closed after use, and exceptions omit raw request URLs and bodies.
 There are no retries, IPv6 updates, cache, or propagation checks.
 
-The unrepaired adapters are Afraid, ChangeIP, CloudNS, DNSMax, Dynu, EntryDNS,
-EuroDynDNS, FreeDNS, GoDaddyDDNS, GoogleDomains, NoIP, SecurePoint, SpDYN, and YDNS.
+The unrepaired adapters are Afraid, ChangeIP, CloudNS, DNSMax, EntryDNS,
+EuroDynDNS, FreeDNS, GoDaddyDDNS, GoogleDomains, SecurePoint, SpDYN, and YDNS.
 Their provider update calls still lack the shared timeout/redirect/encoding and
 response checks. Some endpoints are explicit placeholders in the existing source.
 Do not infer supported services from class names or HTTP success alone.
+
+## No-IP and Dynu
+
+No-IP uses the [documented HTTPS endpoint and Basic authentication](https://www.noip.com/integrate/request).
+Each comma-separated hostname/group must have one response line: good or nochg
+followed by the requested IPv4. Unexpected counts, wrong IPs, and rejection codes
+raise controlled errors. The optional `user_agent` setting overrides the prototype
+identifier (Monotoba UDDNSUpdater/OS-development plus the public repository issues URL).
+Only printable ASCII is allowed to prevent header injection. The default contact
+URL is not an approved/certified No-IP User-Agent and does not establish compliance
+with its recommended maintainer-email format. Provide an appropriate identifier
+and complete approval requirements before using it as a distributed client.
+
+No-IP specifies updates only when the IP changes and requires stopping after
+errors; 911/HTTP 500 requires at least 30 minutes before another attempt.
+See [response requirements](https://www.noip.com/integrate/response). This prototype
+makes no automatic retries, but currently has no persistent change cache, cooldown,
+or account-wide stop state. Multiple sections or later invocations can still make
+additional requests. Those are blockers for unattended use; do not schedule it.
+
+Dynu uses [its documented HTTPS protocol](https://www.dynu.com/en-US/DynamicDNS/IP-Update-Protocol)
+with Basic authentication and the existing username/password/hostname keys.
+`myipv6=no` prevents changes to IPv6 records. Exact good/nochg codes are accepted;
+if an IPv4 detail is present, it must match the request. Unexpected details or
+rejection codes fail. Its 911 response requires a ten-minute suspension; that
+persistent cooldown is not implemented. No retries or automatic scheduling occur.

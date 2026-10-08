@@ -10,7 +10,7 @@ adapters, with a separate experimental task-scheduling component.
 
 **Work in progress — not ready for unattended or production use.** Provider
 loading, configuration validation, dry runs, and CLI failure handling have an offline
-test baseline. Namecheap/DuckDNS request encoding and response checks have offline
+test baseline. Namecheap/DuckDNS/No-IP/Dynu request encoding and response checks have offline
 coverage. Live provider requests, credentials, DNS propagation, and native
 scheduling have not been validated.
 There is no release or PyPI package.
@@ -47,8 +47,8 @@ directory. Imports use one shared base class.
 sections before any provider is constructed. Raw adapter output is suppressed
 by the CLI because it may contain provider response bodies or credentials.
 The older manuals remain design drafts, not validated operating instructions.
-Namecheap and DuckDNS now check response bodies and report provider acceptance.
-The other 14 adapters still have legacy request/response behavior. A zero exit
+Namecheap, DuckDNS, No-IP, and Dynu now check response bodies and report provider acceptance.
+The other 12 adapters still have legacy request/response behavior. A zero exit
 code for those adapters only means they returned without raising; it does not
 establish provider success. No adapter verifies DNS propagation.
 See [provider repair status](docs/PROVIDERS.md).
