@@ -47,12 +47,12 @@ directory. Imports use one shared base class.
 sections before any provider is constructed. Raw adapter output is suppressed
 by the CLI because it may contain provider response bodies or credentials.
 The older manuals remain design drafts, not validated operating instructions.
-Twelve adapter classes now check responses and report provider acceptance.
+Fourteen adapter classes now check responses and report provider acceptance.
 GoogleDomains and DNSMax are retained but disabled: migrated Google domains no
 longer support DDNS, and DNSMax has closed.
-The remaining 2 adapters still have legacy request/response behavior. A zero exit
-code for those adapters only means they returned without raising; it does not
-establish provider success. No adapter verifies DNS propagation.
+All active adapters now raise controlled failures for unrecognized or rejected
+responses. Response checks are offline-tested; several provider contracts still
+need live confirmation. No adapter verifies DNS propagation.
 See [provider repair status](docs/PROVIDERS.md).
 
 The scheduler modules have incompatible method/constructor signatures. Do not

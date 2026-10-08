@@ -1,31 +1,25 @@
-from .ddns_provider import DDNSProvider
-import requests
+"""EntryDNS per-record HTTPS token updates."""
+from urllib.parse import quote
+
+from .ddns_provider import DDNSProvider, ProviderError
+
 
 class EntryDNS(DDNSProvider):
-    required_fields = ('username', 'password', 'hostname')
+    required_fields = ('token', 'hostname')
+
+    def __init__(self, name, config):
+        # Requests normalizes dot path segments even when quote() is used.
+        if config.get('token') in ('.', '..'):
+            raise ProviderError('Invalid EntryDNS record token.')
+        super().__init__(name, config)
 
     def update_ddns(self):
-        try:
-            username = self.config['username']
-            password = self.config['password']
-            hostname = self.config['hostname']
-
-            # Obtain the current external IP
-            external_ip = self.external_ip
-
-            # EntryDNS update URL (replace with the actual API endpoint)
-            update_url = f'https://api.entrydns.net/update?hostname={hostname}&myip={external_ip}'
-
-            auth = (username, password)
-
-            response = requests.get(update_url, auth=auth)
-            response.raise_for_status()
-
-            # Adjust the response parsing based on the actual API response format
-            if 'success' in response.text:
-                print(f"EntryDNS DDNS update for {hostname} successful.")
-            else:
-                print(f"EntryDNS DDNS update failed. Response: {response.text}")
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to update EntryDNS DDNS: {str(e)}")
-
+        ip = self.validate_ipv4(self.external_ip)
+        token = quote(self.config['token'], safe='')
+        body = self.request_text(
+            'https://entrydns.net/records/modify/' + token,
+            {'ip': ip},
+        ).strip()
+        if body != 'OK':
+            raise ProviderError('EntryDNS returned an unrecognized or rejected update.')
+        return True
