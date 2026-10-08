@@ -42,9 +42,9 @@ Every row also requires `ddns_provider` set to the indicated class name.
 
 | Class names | Required settings |
 | --- | --- |
-| Afraid, ChangeIP, CloudNS, DNSMax, Dynu, EntryDNS, EuroDynDNS, NoIP, SecurePoint, SpDYN | username, password, hostname |
+| ChangeIP, CloudNS, DNSMax, Dynu, EntryDNS, EuroDynDNS, NoIP, SecurePoint, SpDYN | username, password, hostname |
 | DuckDNS | subdomain, token |
-| FreeDNS | api_key, hostname |
+| Afraid, FreeDNS | api_key, hostname |
 | GoogleDomains | Unavailable; retained for clear migration errors |
 | GoDaddyDDNS | api_key, api_secret, domain, hostname |
 | NamecheapDDNS | domain, password, hostname |
@@ -112,3 +112,12 @@ Migrated Google Domains no longer supports DDNS according to Squarespace. The
 class remains discoverable, but rejects before network access. Select a supported
 provider rather than reusing old Google credentials or assuming a Squarespace
 API replacement exists. No DNS or registrar migration is performed by this tool.
+
+## FreeDNS / Afraid migration
+
+For either class name, use `api_key` (only the portion after `?` in the provider's
+API-v1 Direct URL) and its associated `hostname`. Afraid's username/password-only
+configuration now fails validation before requests. FreeDNS retains its setting
+names but sends the key in the documented direct-update query, not a Bearer
+header. Do not paste a complete URL or a v2 sync key. See [PROVIDERS.md](PROVIDERS.md)
+for response-evidence limits and the provider's linked-update behavior.

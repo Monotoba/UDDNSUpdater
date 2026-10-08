@@ -11,7 +11,7 @@ import ddns_updater as app
 ROOT = Path(__file__).resolve().parents[1]
 SECRET = "secret%with&characters"
 SCHEMAS = {
-    "Afraid": ("username", "password", "hostname"),
+    "Afraid": ("api_key", "hostname"),
     "ChangeIP": ("username", "password", "hostname"),
     "CloudNS": ("username", "password", "hostname"),
     "DNSMax": ("username", "password", "hostname"),

@@ -47,7 +47,7 @@ directory. Imports use one shared base class.
 sections before any provider is constructed. Raw adapter output is suppressed
 by the CLI because it may contain provider response bodies or credentials.
 The older manuals remain design drafts, not validated operating instructions.
-Nine adapter classes now check responses and report provider acceptance.
+Eleven adapter classes now check responses and report provider acceptance.
 GoogleDomains is retained but disabled because migrated domains no longer support DDNS.
 The other 6 adapters still have legacy request/response behavior. A zero exit
 code for those adapters only means they returned without raising; it does not
