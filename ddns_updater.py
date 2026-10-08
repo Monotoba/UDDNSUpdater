@@ -95,8 +95,11 @@ def main(argv=None):
                 # controlled CLI messages, including constructor failures.
                 with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                     provider = provider_class(section, settings)
-                    provider.update_ddns()
-                print(f"Service {index}: adapter completed; provider success is not yet verified.")
+                    result = provider.update_ddns()
+                if result is True:
+                    print(f"Service {index}: provider accepted the update; DNS propagation is unverified.")
+                else:
+                    print(f"Service {index}: adapter completed; provider success is not yet verified.")
             except Exception:
                 failed = True
                 message = f"Service {index}: update failed; provider details withheld."

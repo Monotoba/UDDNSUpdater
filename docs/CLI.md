@@ -64,8 +64,9 @@ The default configuration is `config.ini` in the working directory. By default,
 errors go to `ddns_update.log` there; `--no-log` disables file logging. Configuration
 errors and dry runs do not open the log. A log-open failure blocks all updates.
 Log handles close after each CLI invocation. Raw exception strings, section names,
-adapter prints, and provider bodies are withheld by the CLI. Direct adapter calls
-bypass this protection and should not be used with real credentials yet.
+adapter prints, and provider bodies are withheld by the CLI. The repaired
+Namecheap/DuckDNS adapters also emit controlled exceptions on direct calls.
+Other direct adapter calls bypass this protection and should not use real credentials.
 
 | Exit code | Meaning |
 | --- | --- |
@@ -73,10 +74,12 @@ bypass this protection and should not be used with real credentials yet.
 | 1 | Adapter-loading, runtime, or logging failure |
 | 2 | Invalid/unreadable configuration or command-line arguments |
 
-Some legacy adapters print a rejected response and return normally. Therefore
-code 0 from a real run does **not** confirm that DNS changed successfully. HTTP
-timeouts, parameter encoding, IP checks, and provider-specific response validation
-are the next repair step. A failure exit also does not prove DNS stayed unchanged.
+Namecheap/DuckDNS now return explicit acceptance only after their response checks
+pass, and rejected/malformed responses produce code 1. Acceptance does not verify
+DNS propagation. The other 14 legacy adapters can print rejection and return
+normally, so code 0 does **not** confirm success for those services. Their request
+contracts are still pending review. A failure exit also does not prove DNS stayed
+unchanged. See [provider repair status](PROVIDERS.md).
 
 Use `python -m ddns_updater` for the same CLI. The legacy
 `providers.ddns_provider.main()` function delegates to this validated entry point.

@@ -10,8 +10,9 @@ adapters, with a separate experimental task-scheduling component.
 
 **Work in progress — not ready for unattended or production use.** Provider
 loading, configuration validation, dry runs, and CLI failure handling have an offline
-test baseline. Live provider requests,
-credentials, response validation, and native scheduling have not been validated.
+test baseline. Namecheap/DuckDNS request encoding and response checks have offline
+coverage. Live provider requests, credentials, DNS propagation, and native
+scheduling have not been validated.
 There is no release or PyPI package.
 
 ## Start with development checks
@@ -46,8 +47,11 @@ directory. Imports use one shared base class.
 sections before any provider is constructed. Raw adapter output is suppressed
 by the CLI because it may contain provider response bodies or credentials.
 The older manuals remain design drafts, not validated operating instructions.
-A zero exit code from a real run currently means adapters returned without
-raising; it does not establish provider success or DNS propagation.
+Namecheap and DuckDNS now check response bodies and report provider acceptance.
+The other 14 adapters still have legacy request/response behavior. A zero exit
+code for those adapters only means they returned without raising; it does not
+establish provider success. No adapter verifies DNS propagation.
+See [provider repair status](docs/PROVIDERS.md).
 
 The scheduler modules have incompatible method/constructor signatures. Do not
 use them to install system tasks yet. See [ROADMAP.md](ROADMAP.md) for the repair
