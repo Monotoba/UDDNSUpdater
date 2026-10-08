@@ -1,4 +1,4 @@
-from ddns_updater import DDNSProvider
+from .ddns_provider import DDNSProvider
 import requests
 
 class ChangeIP(DDNSProvider):
@@ -33,3 +33,4 @@ class ChangeIP(DDNSProvider):
                 print(f"ChangeIP DDNS update failed. Response: {response.text}")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to update ChangeIP DDNS: {str(e)}")
+

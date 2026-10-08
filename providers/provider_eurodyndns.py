@@ -1,4 +1,4 @@
-from ddns_updater import DDNSProvider
+from .ddns_provider import DDNSProvider
 import requests
 
 class EuroDynDNS(DDNSProvider):
@@ -33,3 +33,4 @@ class EuroDynDNS(DDNSProvider):
                 print(f"EuroDynDNS DDNS update failed. Response: {response.text}")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to update EuroDynDNS DDNS: {str(e)}")
+

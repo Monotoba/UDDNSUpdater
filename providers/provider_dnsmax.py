@@ -1,4 +1,4 @@
-from ddns_updater import DDNSProvider
+from .ddns_provider import DDNSProvider
 import requests
 
 class DNSMax(DDNSProvider):
@@ -32,3 +32,4 @@ class DNSMax(DDNSProvider):
                 print(f"DNS MAX DDNS update failed. Response: {response.text}")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to update DNS MAX DDNS: {str(e)}")
+

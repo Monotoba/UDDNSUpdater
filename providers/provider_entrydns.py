@@ -1,4 +1,4 @@
-from ddns_updater import DDNSProvider
+from .ddns_provider import DDNSProvider
 import requests
 
 class EntryDNS(DDNSProvider):
@@ -26,3 +26,4 @@ class EntryDNS(DDNSProvider):
                 print(f"EntryDNS DDNS update failed. Response: {response.text}")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to update EntryDNS DDNS: {str(e)}")
+

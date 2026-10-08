@@ -1,4 +1,4 @@
-from ddns_updater import DDNSProvider
+from .ddns_provider import DDNSProvider
 import requests
 
 class NoIP(DDNSProvider):
@@ -24,3 +24,4 @@ class NoIP(DDNSProvider):
                 print(f"No-IP DDNS update failed. Response: {response.text}")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to update No-IP DDNS: {str(e)}")
+

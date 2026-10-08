@@ -1,4 +1,4 @@
-from ddns_updater import DDNSProvider
+from .ddns_provider import DDNSProvider
 import requests
 
 class GoDaddyDDNS(DDNSProvider):
@@ -30,3 +30,4 @@ class GoDaddyDDNS(DDNSProvider):
             print(f"GoDaddy DDNS update for {domain} successful.")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to update GoDaddy DDNS: {str(e)}")
+

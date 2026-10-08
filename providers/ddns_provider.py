@@ -26,19 +26,9 @@ class DDNSProvider:
 
 
 def load_provider_classes():
-    provider_classes = {}
-    provider_dir = ''
-
-    # Dynamically import all provider classes from the providers directory
-    for filename in os.listdir(provider_dir):
-        if filename.startswith("provider_") and filename.endswith(".py"):
-            module_name = filename[:-3]  # Remove .py extension
-            module = __import__(f"{provider_dir}.{module_name}", fromlist=["Provider"])
-            for name, cls in vars(module).items():
-                if isinstance(cls, type) and issubclass(cls, DDNSProvider) and cls is not DDNSProvider:
-                    provider_classes[name] = cls
-
-    return provider_classes
+    # Keep the legacy helper while using the same discovery implementation.
+    from ddns_updater import load_provider_classes as discover
+    return discover()
 
 
 def main():
@@ -88,3 +78,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -1,4 +1,4 @@
-from ddns_updater import DDNSProvider
+from .ddns_provider import DDNSProvider
 import requests
 
 class FreeDNS(DDNSProvider):
@@ -34,3 +34,4 @@ class FreeDNS(DDNSProvider):
                 print(f"FreeDNS DDNS update failed. Response: {response.text}")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to update FreeDNS DDNS: {str(e)}")
+
