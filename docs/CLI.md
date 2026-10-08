@@ -42,8 +42,9 @@ Every row also requires `ddns_provider` set to the indicated class name.
 
 | Class names | Required settings |
 | --- | --- |
-| ChangeIP, Dynu, EntryDNS, EuroDynDNS, NoIP, SecurePoint, SpDYN | username, password, hostname |
+| ChangeIP, Dynu, EuroDynDNS, NoIP, SecurePoint, SpDYN | username, password, hostname |
 | DuckDNS | subdomain, token |
+| EntryDNS | token, hostname |
 | Afraid, FreeDNS, CloudNS | api_key, hostname |
 | GoogleDomains, DNSMax | Unavailable; retained for clear migration errors |
 | GoDaddyDDNS | api_key, api_secret, domain, hostname |
@@ -67,7 +68,7 @@ errors and dry runs do not open the log. A log-open failure blocks all updates.
 Log handles close after each CLI invocation. Raw exception strings, section names,
 adapter prints, and provider bodies are withheld by the CLI. The repaired
 adapters also emit controlled exceptions on direct calls.
-Other direct adapter calls bypass this protection and should not use real credentials.
+Direct calls still bypass CLI logging and service-level configuration validation.
 
 | Exit code | Meaning |
 | --- | --- |
@@ -77,10 +78,10 @@ Other direct adapter calls bypass this protection and should not use real creden
 
 The repaired adapters now return explicit acceptance only after their response checks
 pass, and rejected/malformed responses produce code 1. Acceptance does not verify
-DNS propagation. The remaining 2 legacy adapters can print rejection and return
-normally, so code 0 does **not** confirm success for those services. Their request
-contracts are still pending review. A failure exit also does not prove DNS stayed
-unchanged. See [provider repair status](PROVIDERS.md).
+DNS propagation. All active adapters now raise controlled failures on rejection
+or unrecognized responses, but several response contracts still need live
+confirmation. A failure exit also does not prove DNS stayed unchanged.
+See [provider repair status](PROVIDERS.md).
 
 Use `python -m ddns_updater` for the same CLI. The legacy
 `providers.ddns_provider.main()` function delegates to this validated entry point.
@@ -135,3 +136,18 @@ endpoint receives encoded `q` and `ip` parameters; exact OK indicates acceptance
 reject it with code 2 before logging or requests. The provider announced closure
 on January 27, 2026. Choose and configure another provider separately; this tool
 does not migrate zones. See [PROVIDERS.md](PROVIDERS.md) for sources and limits.
+
+## EntryDNS and EuroDynDNS
+
+`EntryDNS` now requires `token` and `hostname`. Use the record-specific token for
+an A record; old username/password-only configurations fail before requests.
+The token selects the record, while hostname is a configuration label and must
+correspond to it. The adapter uses the provider's documented HTTPS GET endpoint
+with an explicit IPv4. TLS certificate verification remains enabled.
+
+`EuroDynDNS` retains `username`, `password`, and `hostname` and now uses the
+provider's documented HTTPS update endpoint with Basic authentication. Only
+exact good/nochg status, optionally followed by the requested IPv4, is accepted.
+The provider's abuse code is treated as a failure, with no retry. Repeated nochg
+updates can trigger abuse; persistent change detection and stop controls are
+not implemented. Do not install unattended tasks yet.

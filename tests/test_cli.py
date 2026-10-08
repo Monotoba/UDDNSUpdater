@@ -17,7 +17,7 @@ SCHEMAS = {
     "DNSMax": ("username", "password", "hostname"),
     "DuckDNS": ("subdomain", "token"),
     "Dynu": ("username", "password", "hostname"),
-    "EntryDNS": ("username", "password", "hostname"),
+    "EntryDNS": ("token", "hostname"),
     "EuroDynDNS": ("username", "password", "hostname"),
     "FreeDNS": ("api_key", "hostname"),
     "GoDaddyDDNS": ("api_key", "api_secret", "domain", "hostname"),

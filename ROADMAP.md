@@ -13,8 +13,10 @@
    adapter against current official documentation; do not claim all adapters
    work from shared HTTP status checks. Test request/response contracts offline.
    **Partial:** shared IPv4 discovery is repaired; the repaired adapters use encoded
-   parameters, timeouts, redirect blocking, and explicit response checks. Two
-   adapter-specific contracts remain pending; live validation is still outstanding.
+   parameters, timeouts, redirect blocking, and explicit response checks. All 16
+   classes have been audited: 14 active adapters repaired, 2 retired services
+   disabled. Full response specifications and live validation remain outstanding
+   for several services; persistent change/error controls are also unfinished.
 4. **Scheduler:** reconcile existing interfaces, validate schedule fields, fix
    cron/launchd/Windows command generation, and avoid shell interpolation.
    Test with mocked subprocesses and temporary files before native integration.

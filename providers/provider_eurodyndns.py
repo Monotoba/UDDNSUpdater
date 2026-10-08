@@ -1,5 +1,8 @@
-from .ddns_provider import DDNSProvider
-import requests
+"""EuroDynDNS HTTPS updates with conservative status parsing."""
+import re
+
+from .ddns_provider import DDNSProvider, ProviderError
+
 
 class EuroDynDNS(DDNSProvider):
     required_fields = ('username', 'password', 'hostname')
@@ -11,28 +14,12 @@ class EuroDynDNS(DDNSProvider):
         self.hostname = self.config['hostname']
 
     def update_ddns(self):
-        try:
-            # Obtain the current external IP
-            external_ip = self.external_ip
-
-            # EuroDynDNS update URL (replace with the actual API endpoint)
-            update_url = 'https://api.eurodyndns.org/nic/update'
-            params = {
-                'hostname': self.hostname,
-                'myip': external_ip,
-            }
-
-            auth = (self.username, self.password)
-
-            response = requests.get(update_url, params=params, auth=auth)
-            response.raise_for_status()
-
-            if 'good' in response.text:
-                print(f"EuroDynDNS DDNS update for {self.hostname} successful.")
-            elif 'nochg' in response.text:
-                print(f"EuroDynDNS DDNS update for {self.hostname} skipped (IP address unchanged).")
-            else:
-                print(f"EuroDynDNS DDNS update failed. Response: {response.text}")
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to update EuroDynDNS DDNS: {str(e)}")
-
+        ip = self.validate_ipv4(self.external_ip)
+        body = self.request_text(
+            'https://update.eurodyndns.org/update/',
+            {'hostname': self.hostname, 'myip': ip},
+            auth=(self.username, self.password),
+        ).strip()
+        if not re.fullmatch(rf'(?:good|nochg)(?:[ \t]+{re.escape(ip)})?', body):
+            raise ProviderError('EuroDynDNS did not accept the requested IPv4 update.')
+        return True

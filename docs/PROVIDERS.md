@@ -19,7 +19,8 @@ live updates or DNS propagation checks have been performed. No release is availa
 | Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks | Controlled live response confirmation; account linked-update scope; v2 not implemented |
 | CloudNS | Documented IPv4 DynamicURL endpoint; encoded per-record q key and ip; shared HTTP protections; exact OK response | Controlled live acceptance/propagation validation; optional JSON/failover parameters not implemented |
 | DNSMax | Disabled before network access; retained class with migration errors | Provider closed January 27, 2026 |
-| Other 2 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
+| EntryDNS | Documented per-record HTTPS GET; encoded token path and explicit ip; shared HTTP protections; exact OK policy | Provider response specification/controlled live confirmation; token-to-hostname association not verified |
+| EuroDynDNS | Documented HTTPS update endpoint; encoded hostname/myip; Basic auth; single good/nochg status with matching IPv4 when present | Persistent change/error controls; controlled live response/propagation validation |
 
 The shared discovery endpoint is `https://api.ipify.org`. It returns an IPv4
 address in plain text according to [ipify's documentation](https://www.ipify.org/).
@@ -39,17 +40,18 @@ setting. The implementation sends no `verbose` flag and accepts only `OK` after
 stripping outer whitespace; `KO` or unexpected content raises a controlled error.
 See the [official DuckDNS specification](https://www.duckdns.org/spec.jsp).
 
-For shared discovery and the twelve repaired update adapters, connect/read timeouts
-are 5/15 seconds, not a total wall-clock deadline. Redirects and non-200 statuses
-are rejected. Bodies are limited to 65,536 characters **before parsing**, after
+For shared discovery and the fourteen repaired update adapters, connect/read timeouts
+are 5/15 seconds, not a total wall-clock deadline. Redirects and unexpected HTTP
+statuses are rejected; GoDaddy also accepts an empty 204 response. Bodies are limited to 65,536 characters **before parsing**, after
 Requests has downloaded them; this is not a streaming/download memory limit.
 Responses are closed after use, and exceptions omit raw request URLs and bodies.
 There are no retries, IPv6 updates, cache, or propagation checks.
 
-The unrepaired adapters are EntryDNS and EuroDynDNS.
-Their provider update calls still lack the shared timeout/redirect/encoding and
-response checks. Some endpoints are explicit placeholders in the existing source.
-Do not infer supported services from class names or HTTP success alone.
+All 16 classes have now been audited: 14 active adapter classes have repaired
+request/response handling, and GoogleDomains/DNSMax are disabled. This completes
+the initial source audit, not live service validation. Incomplete response
+documentation, account-specific settings, and unattended-use controls remain
+limitations. Do not infer complete support from class names or HTTP success.
 
 ## No-IP and Dynu
 
@@ -130,7 +132,7 @@ or API entitlement has been validated for this project.
 says DDNS is unavailable for migrated Google Domains. GoogleDomains is therefore
 retained as a disabled class with explicit configuration/direct-call errors before
 network access. Existing static records and registrar settings are not changed.
-The two unaudited adapters listed above are distinct from this retired service.
+DNSMax is also disabled following its confirmed closure, as documented below.
 
 ## FreeDNS.afraid.org (Afraid and FreeDNS)
 
@@ -185,3 +187,35 @@ The adapter is retained but disabled for direct calls and CLI configuration, bef
 IP discovery or any update request. Its old api.dnsmas.net placeholder is removed.
 This is a retired service, not an active adapter awaiting repair. No zone export,
 registrar change, or migration to another DNS provider is performed by this tool.
+
+## EntryDNS: limited response evidence
+
+The [official REST instructions](https://entrydns.net/help/restapi) document HTTPS
+GET to `https://entrydns.net/records/modify/TOKEN?ip=IPv4`. This replaces the old
+placeholder api.entrydns.net URL and account Basic authentication. Configure a
+record-specific token for an A record, plus its hostname. The token selects the
+record; the response does not independently verify hostname or record type.
+Tokens are encoded as one path component; dot-segment tokens are rejected.
+Certificate verification remains enabled even though the provider's curl example
+uses the insecure -k option. The implementation does not send PUT or JSON.
+
+Public EntryDNS help does not specify response bodies. Our conservative exact
+OK policy is informed by the [Asuswrt-Merlin integration example](https://github.com/RMerl/asuswrt-merlin.ng/wiki/DDNS-Sample-Scripts),
+not a verified complete provider response contract. Unknown bodies fail. Controlled
+live confirmation or a provider response specification remains necessary.
+
+## EuroDynDNS
+
+The [official documentation](https://www.eurodns.com/dynamic-dns-documentation)
+specifies HTTPS at `https://update.eurodyndns.org/update/`, hostname/myip query
+parameters, and Basic authentication. Existing username/password/hostname keys
+are retained. The parser accepts a single good/nochg status; an optional IPv4
+must match the request. Optional IP detail is a conservative compatibility policy,
+not explicitly specified on the provider page. Rejection and unknown bodies fail.
+
+EuroDNS says the service requires its nameservers and activated dynamic hosts,
+and does not support round-robin records. Repeated unchanged updates can return
+abuse. This implementation has no retry, but lacks persistent change detection
+or account-wide stop state, so repeated invocations or sections can still send
+unnecessary requests. Unattended scheduling remains blocked; no live DNS update
+or propagation check has been performed.
