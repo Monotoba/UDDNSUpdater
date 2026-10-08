@@ -85,7 +85,8 @@ See [provider repair status](PROVIDERS.md).
 
 Use `python -m ddns_updater` for the same CLI. The legacy
 `providers.ddns_provider.main()` function delegates to this validated entry point.
-Native scheduler behavior is still incomplete; no release is available.
+A separate [scheduler dry run](SCHEDULER.md) validates daily trigger plans. Native
+installation remains blocked; no release is available.
 
 ## YDNS configuration correction
 

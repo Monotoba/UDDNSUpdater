@@ -55,9 +55,11 @@ responses. Response checks are offline-tested; several provider contracts still
 need live confirmation. No adapter verifies DNS propagation.
 See [provider repair status](docs/PROVIDERS.md).
 
-The scheduler modules have incompatible method/constructor signatures. Do not
-use them to install system tasks yet. See [ROADMAP.md](ROADMAP.md) for the repair
-order and [CONTRIBUTING.md](CONTRIBUTING.md) for test expectations.
+The unified scheduler now validates a separate daily schedule and offers a
+side-effect-free dry run. Native installation is explicitly blocked while backend
+commands and DDNS change/error controls remain unfinished. The older Task-section
+installer is also incomplete. See [scheduler validation](docs/SCHEDULER.md),
+[ROADMAP.md](ROADMAP.md), and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Contribute
 

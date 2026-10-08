@@ -1,5 +1,8 @@
 import configparser
-from utask_scheduler import UTaskScheduler
+if __package__:
+    from .utask_scheduler import UTaskScheduler
+else:
+    from utask_scheduler import UTaskScheduler
 
 def parse_config(config_file):
     config = configparser.ConfigParser()
@@ -64,3 +67,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
