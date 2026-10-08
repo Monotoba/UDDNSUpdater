@@ -1,34 +1,35 @@
-from .ddns_provider import DDNSProvider
-import requests
+from .ddns_provider import DDNSProvider, ProviderError
+
 
 class YDNS(DDNSProvider):
-    required_fields = ('domain_id', 'api_key')
+    required_fields = ("hostname", "username", "password")
+
+    @staticmethod
+    def normalize_settings(config):
+        settings = dict(config)
+        # Retain old keys when they can actually represent API-v1 inputs.
+        for old, new in (("domain_id", "hostname"), ("api_key", "password"),
+                         ("api_username", "username")):
+            if new not in settings and old in settings:
+                settings[new] = settings[old]
+        return settings
 
     def __init__(self, name, config):
-        super().__init__(name, config)
-        self.domain_id = self.config['domain_id']
-        self.api_key = self.config['api_key']
+        settings = self.normalize_settings(config)
+        if settings.get("hostname", "").strip().isdigit():
+            raise ProviderError("YDNS needs a hostname, not a numeric domain ID.")
+        super().__init__(name, settings)
+        # Preserve the legacy attributes while using the documented API inputs.
+        self.domain_id = self.config["hostname"]
+        self.api_key = self.config["password"]
 
     def update_ddns(self):
-        try:
-            # Obtain the current external IP
-            external_ip = self.external_ip
-
-            # YDNS update URL
-            update_url = f'https://ydns.io/api/v1/update'
-            params = {
-                'domain': self.domain_id,
-                'ip': external_ip,
-                'apikey': self.api_key,
-            }
-
-            response = requests.get(update_url, params=params)
-            response.raise_for_status()
-
-            if 'good' in response.text:
-                print(f"YDNS DDNS update for {self.domain_id} successful.")
-            else:
-                print(f"YDNS DDNS update failed. Response: {response.text}")
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to update YDNS DDNS: {str(e)}")
-
+        external_ip = self.validate_ipv4(self.external_ip)
+        text = self.request_text(
+            "https://ydns.io/api/v1/update/",
+            params={"host": self.config["hostname"], "ip": external_ip},
+            auth=(self.config["username"], self.config["password"]),
+        )
+        if text.strip() != "good":
+            raise ProviderError("YDNS did not accept the update.")
+        return True

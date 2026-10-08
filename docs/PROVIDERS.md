@@ -12,7 +12,9 @@ live updates or DNS propagation checks have been performed. No release is availa
 | Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied | Persistent error/cooldown controls, controlled live validation |
 | ChangeIP | HTTPS Basic auth; encoded parameters; known plain-text success heading, matching IP when present | Provider response documentation/controlled live confirmation |
 | SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; exact good/nochg with matching IP when present | Full wiki access/controlled live confirmation |
-| Other 10 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
+| SpDYN | Reuses the repaired SecurePoint implementation with its legacy class name/settings | Same wiki-access/live-validation limitations as SecurePoint |
+| YDNS | Documented trailing-slash HTTPS endpoint; host/IP parameters; Basic auth; exact good response; corrected credential settings with legacy aliases | Controlled live validation; optional record_id selection not implemented |
+| Other 8 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
 
 The shared discovery endpoint is `https://api.ipify.org`. It returns an IPv4
 address in plain text according to [ipify's documentation](https://www.ipify.org/).
@@ -32,7 +34,7 @@ setting. The implementation sends no `verbose` flag and accepts only `OK` after
 stripping outer whitespace; `KO` or unexpected content raises a controlled error.
 See the [official DuckDNS specification](https://www.duckdns.org/spec.jsp).
 
-For shared discovery and the six repaired update adapters, connect/read timeouts
+For shared discovery and the eight repaired update adapters, connect/read timeouts
 are 5/15 seconds, not a total wall-clock deadline. Redirects and non-200 statuses
 are rejected. Bodies are limited to 65,536 characters **before parsing**, after
 Requests has downloaded them; this is not a streaming/download memory limit.
@@ -40,7 +42,7 @@ Responses are closed after use, and exceptions omit raw request URLs and bodies.
 There are no retries, IPv6 updates, cache, or propagation checks.
 
 The unrepaired adapters are Afraid, CloudNS, DNSMax, EntryDNS,
-EuroDynDNS, FreeDNS, GoDaddyDDNS, GoogleDomains, SpDYN, and YDNS.
+EuroDynDNS, FreeDNS, GoDaddyDDNS, and GoogleDomains.
 Their provider update calls still lack the shared timeout/redirect/encoding and
 response checks. Some endpoints are explicit placeholders in the existing source.
 Do not infer supported services from class names or HTTP success alone.
@@ -91,5 +93,16 @@ See [host usage](https://wiki.securepoint.de/SPDyn/Hostverwenden) and
 The conservative parser accepts only a single good/nochg token with an optional
 matching IPv4. This is an offline-tested policy, not a verified complete response
 contract. Existing username/password/hostname keys remain unchanged; configure
-credentials appropriate for the host in your Securepoint account. The separate
-SpDYN class remains unrepaired despite the related provider name.
+credentials appropriate for the host in your Securepoint account. The SpDYN class now reuses this implementation, preserving its class name and
+username/password/hostname configuration. Both retain these evidence limitations.
+
+## YDNS
+
+The [official API-v1 documentation](https://ydns.io/api/v1/) specifies a GET to
+`https://ydns.io/api/v1/update/` with `host` and optional `ip`, using HTTP Basic
+authentication. HTTP 200 plus the exact body good indicates acceptance. Errors
+include 400, 401, and 404. The adapter now follows that contract and the shared
+HTTP checks. It does not send the old undocumented domain/apikey query fields.
+Use the API username/password from your account and a hostname, not a domain ID.
+Legacy aliases and migration details are in [CLI.md](CLI.md). Optional record_id
+selection and IPv6 updating are outside the current implementation.
