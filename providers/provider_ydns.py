@@ -2,6 +2,8 @@ from .ddns_provider import DDNSProvider
 import requests
 
 class YDNS(DDNSProvider):
+    required_fields = ('domain_id', 'api_key')
+
     def __init__(self, name, config):
         super().__init__(name, config)
         self.domain_id = self.config['domain_id']

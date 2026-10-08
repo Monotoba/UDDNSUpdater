@@ -2,6 +2,8 @@ from .ddns_provider import DDNSProvider
 import requests
 
 class NamecheapDDNS(DDNSProvider):
+    required_fields = ('domain', 'password', 'hostname')
+
     def update_ddns(self):
         try:
             domain = self.config['domain']

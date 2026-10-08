@@ -2,8 +2,9 @@
 
 Create a Python 3.10+ virtual environment, install `requirements-dev.txt`, and run
 `python -m pytest -q`. CI runs Python 3.10 and 3.12 on Linux, Windows, and Intel
-macOS. This baseline checks provider imports/discovery and help launchers only;
-it does not prove provider APIs or native scheduling work.
+macOS. This baseline checks imports/discovery, help launchers, configuration validation,
+dry-run side effects, literal credentials, sanitized output, and raised runtime
+failures. It does not prove provider APIs or native scheduling work.
 
 Refactor existing modules in small patches. Add regression tests for every code
 change. Mock HTTP requests and scheduler subprocesses; never use real credentials,

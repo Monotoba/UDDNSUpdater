@@ -2,6 +2,8 @@ from .ddns_provider import DDNSProvider
 import requests
 
 class GoogleDomains(DDNSProvider):
+    required_fields = ('api_key', 'hostname')
+
     def __init__(self, name, config):
         super().__init__(name, config)
         self.api_key = self.config['api_key']

@@ -2,6 +2,8 @@ from .ddns_provider import DDNSProvider
 import requests
 
 class Afraid(DDNSProvider):
+    required_fields = ('username', 'password', 'hostname')
+
     def update_ddns(self):
         try:
             username = self.config['username']
