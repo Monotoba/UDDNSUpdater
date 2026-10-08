@@ -1,6 +1,5 @@
 import argparse
 import configparser
-import platform
 import sys
 
 
@@ -47,7 +46,7 @@ class UTaskScheduler:
         if (type(hour) is not int or type(minute) is not int
                 or not 0 <= hour < 24 or not 0 <= minute < 60):
             raise SchedulerError("Invalid daily trigger time.")
-        system = platform.system()
+        system = {"win32": "Windows", "linux": "Linux", "darwin": "Darwin"}.get(sys.platform)
         if system not in {"Windows", "Linux", "Darwin"}:
             raise SchedulerError("Unsupported operating system for task scheduling.")
         if not dry_run:

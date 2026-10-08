@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 import subprocess
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -19,7 +20,7 @@ def prohibit_system_mutations(monkeypatch):
         pytest.fail('Native system task mutation prohibited')
     monkeypatch.setattr(subprocess, 'run', blocked)
     monkeypatch.setattr(os, 'system', blocked)
-    monkeypatch.setattr(app.platform, 'system', lambda: 'Linux')
+    monkeypatch.setattr(app, 'sys', SimpleNamespace(platform='linux', stderr=sys.stderr))
 
 
 def write_config(tmp_path, content='[SCHEDULE]\nHour=*/6\nMinute=*/15\n'):
@@ -45,7 +46,8 @@ def test_invalid_cron_fields_raise_controlled_error(field):
 
 @pytest.mark.parametrize('system', ['Linux', 'Windows', 'Darwin'])
 def test_plan_preserves_arguments_and_daily_trigger_product(tmp_path, monkeypatch, system):
-    monkeypatch.setattr(app.platform, 'system', lambda: system)
+    tag = {'Linux': 'linux', 'Windows': 'win32', 'Darwin': 'darwin'}[system]
+    monkeypatch.setattr(app, 'sys', SimpleNamespace(platform=tag, stderr=sys.stderr))
     path = write_config(tmp_path)
     tasks = app.UTaskScheduler(path).schedule(COMMAND, dry_run=True)
     assert len(tasks) == 16
@@ -98,7 +100,7 @@ def test_invalid_direct_trigger(hour, minute):
 
 
 def test_unsupported_platform(tmp_path, monkeypatch):
-    monkeypatch.setattr(app.platform, 'system', lambda: 'Unknown')
+    monkeypatch.setattr(app, 'sys', SimpleNamespace(platform='unknown', stderr=sys.stderr))
     with pytest.raises(app.SchedulerError, match='Unsupported'):
         app.UTaskScheduler(write_config(tmp_path)).plan(COMMAND)
 
