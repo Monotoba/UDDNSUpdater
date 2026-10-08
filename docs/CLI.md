@@ -42,10 +42,10 @@ Every row also requires `ddns_provider` set to the indicated class name.
 
 | Class names | Required settings |
 | --- | --- |
-| ChangeIP, CloudNS, DNSMax, Dynu, EntryDNS, EuroDynDNS, NoIP, SecurePoint, SpDYN | username, password, hostname |
+| ChangeIP, Dynu, EntryDNS, EuroDynDNS, NoIP, SecurePoint, SpDYN | username, password, hostname |
 | DuckDNS | subdomain, token |
-| Afraid, FreeDNS | api_key, hostname |
-| GoogleDomains | Unavailable; retained for clear migration errors |
+| Afraid, FreeDNS, CloudNS | api_key, hostname |
+| GoogleDomains, DNSMax | Unavailable; retained for clear migration errors |
 | GoDaddyDDNS | api_key, api_secret, domain, hostname |
 | NamecheapDDNS | domain, password, hostname |
 | YDNS | hostname, username, password |
@@ -66,7 +66,7 @@ errors go to `ddns_update.log` there; `--no-log` disables file logging. Configur
 errors and dry runs do not open the log. A log-open failure blocks all updates.
 Log handles close after each CLI invocation. Raw exception strings, section names,
 adapter prints, and provider bodies are withheld by the CLI. The repaired
-the repaired adapters adapters also emit controlled exceptions on direct calls.
+adapters also emit controlled exceptions on direct calls.
 Other direct adapter calls bypass this protection and should not use real credentials.
 
 | Exit code | Meaning |
@@ -75,9 +75,9 @@ Other direct adapter calls bypass this protection and should not use real creden
 | 1 | Adapter-loading, runtime, or logging failure |
 | 2 | Invalid/unreadable configuration or command-line arguments |
 
-the repaired adapters now return explicit acceptance only after their response checks
+The repaired adapters now return explicit acceptance only after their response checks
 pass, and rejected/malformed responses produce code 1. Acceptance does not verify
-DNS propagation. The other 6 legacy adapters can print rejection and return
+DNS propagation. The remaining 2 legacy adapters can print rejection and return
 normally, so code 0 does **not** confirm success for those services. Their request
 contracts are still pending review. A failure exit also does not prove DNS stayed
 unchanged. See [provider repair status](PROVIDERS.md).
@@ -121,3 +121,17 @@ configuration now fails validation before requests. FreeDNS retains its setting
 names but sends the key in the documented direct-update query, not a Bearer
 header. Do not paste a complete URL or a v2 sync key. See [PROVIDERS.md](PROVIDERS.md)
 for response-evidence limits and the provider's linked-update behavior.
+
+## ClouDNS and DNSMax
+
+`CloudNS` now requires `api_key` and `hostname`. Activate DynamicURL for the A
+record in ClouDNS and copy only its `q` value into `api_key`. Do not use your
+account password or paste the entire URL. `hostname` identifies the record for
+your configuration; the key selects the actual record and must correspond to it.
+Username/password-only configurations fail before any requests. The fixed IPv4
+endpoint receives encoded `q` and `ip` parameters; exact OK indicates acceptance.
+
+`DNSMax` is retained for a clear migration error, but both normal and dry runs
+reject it with code 2 before logging or requests. The provider announced closure
+on January 27, 2026. Choose and configure another provider separately; this tool
+does not migrate zones. See [PROVIDERS.md](PROVIDERS.md) for sources and limits.

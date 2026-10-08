@@ -17,7 +17,9 @@ live updates or DNS propagation checks have been performed. No release is availa
 | GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance | Controlled live validation; PAT/v3 migration; named multi-value A sets are replaced |
 | GoogleDomains | Disabled before network access; retained discoverable class and migration error | Service unavailable for migrated domains |
 | Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks | Controlled live response confirmation; account linked-update scope; v2 not implemented |
-| Other 4 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
+| CloudNS | Documented IPv4 DynamicURL endpoint; encoded per-record q key and ip; shared HTTP protections; exact OK response | Controlled live acceptance/propagation validation; optional JSON/failover parameters not implemented |
+| DNSMax | Disabled before network access; retained class with migration errors | Provider closed January 27, 2026 |
+| Other 2 adapters | Configuration requirements and shared IPv4 discovery only | Audit current official endpoints/authentication and repair request/response contracts |
 
 The shared discovery endpoint is `https://api.ipify.org`. It returns an IPv4
 address in plain text according to [ipify's documentation](https://www.ipify.org/).
@@ -37,14 +39,14 @@ setting. The implementation sends no `verbose` flag and accepts only `OK` after
 stripping outer whitespace; `KO` or unexpected content raises a controlled error.
 See the [official DuckDNS specification](https://www.duckdns.org/spec.jsp).
 
-For shared discovery and the eleven repaired update adapters, connect/read timeouts
+For shared discovery and the twelve repaired update adapters, connect/read timeouts
 are 5/15 seconds, not a total wall-clock deadline. Redirects and non-200 statuses
 are rejected. Bodies are limited to 65,536 characters **before parsing**, after
 Requests has downloaded them; this is not a streaming/download memory limit.
 Responses are closed after use, and exceptions omit raw request URLs and bodies.
 There are no retries, IPv6 updates, cache, or propagation checks.
 
-The unrepaired adapters are CloudNS, DNSMax, EntryDNS, and EuroDynDNS.
+The unrepaired adapters are EntryDNS and EuroDynDNS.
 Their provider update calls still lack the shared timeout/redirect/encoding and
 response checks. Some endpoints are explicit placeholders in the existing source.
 Do not infer supported services from class names or HTTP success alone.
@@ -128,7 +130,7 @@ or API entitlement has been validated for this project.
 says DDNS is unavailable for migrated Google Domains. GoogleDomains is therefore
 retained as a disabled class with explicit configuration/direct-call errors before
 network access. Existing static records and registrar settings are not changed.
-The four unaudited adapters listed above are distinct from this retired service.
+The two unaudited adapters listed above are distinct from this retired service.
 
 ## FreeDNS.afraid.org (Afraid and FreeDNS)
 
@@ -158,3 +160,28 @@ A hostname in this configuration does not override that account setting, and a
 no-change notice does not independently identify a record. Keep the key paired
 with the correct hostname. The guide also describes a short cache for repeated
 updates; no retries or scheduler are added here.
+
+## ClouDNS
+
+The [provider Synology guide](https://www.cloudns.net/wiki/article/175/) specifies
+`https://ipv4.cloudns.net/api/dynamicURL/?q=KEY&ip=IPv4`. The adapter now uses that
+fixed endpoint with encoded query parameters and shared HTTP protections instead
+of the placeholder api.cloudns.net/ddns/update URL and account Basic auth.
+Its setting `api_key` is the record-specific q value, not an account password.
+Configure the associated A-record hostname; the key selects the record, and the
+response does not independently verify the configured hostname.
+
+The [getting-started guide](https://www.cloudns.net/wiki/article/364/) documents
+OK when no response=json parameter is provided. The adapter accepts only exact
+OK after outer whitespace is stripped. Optional JSON detail, IPv6, notification,
+and failover-main-IP updates are not requested. Live acceptance and propagation
+remain untested. See [CLI.md](CLI.md) for configuration migration.
+
+## DNSMax closure
+
+The [official DNSMax site](https://www.dnsmax.com/) announces January 27, 2026 as
+the final day of operations, following its earlier DNSMax/ThatIP shutdown notice.
+The adapter is retained but disabled for direct calls and CLI configuration, before
+IP discovery or any update request. Its old api.dnsmas.net placeholder is removed.
+This is a retired service, not an active adapter awaiting repair. No zone export,
+registrar change, or migration to another DNS provider is performed by this tool.
