@@ -1,40 +1,13 @@
-from .ddns_provider import DDNSProvider
-import requests
+from .ddns_provider import DDNSProvider, ProviderError
+
 
 class GoogleDomains(DDNSProvider):
-    required_fields = ('api_key', 'hostname')
+    required_fields = ("api_key", "hostname")
+    disabled_reason = "Google Domains DDNS is unavailable; select another provider."
 
     def __init__(self, name, config):
-        super().__init__(name, config)
-        self.api_key = self.config['api_key']
+        # Preserve the discoverable class but never contact the retired service.
+        raise ProviderError(self.disabled_reason)
 
     def update_ddns(self):
-        try:
-            hostname = self.config['hostname']
-
-            # Obtain the current external IP
-            external_ip = self.external_ip
-
-            # Google Domains update URL
-            update_url = f'https://domains.google.com/nic/update'
-            params = {
-                'hostname': hostname,
-                'myip': external_ip,
-            }
-
-            headers = {
-                'Authorization': f'Basic {self.api_key}',
-            }
-
-            response = requests.get(update_url, params=params, headers=headers)
-            response.raise_for_status()
-
-            if response.text.startswith('good'):
-                print(f"Google Domains DDNS update for {hostname} successful.")
-            elif response.text.startswith('nochg'):
-                print(f"Google Domains DDNS update for {hostname} skipped (IP address unchanged).")
-            else:
-                print(f"Google Domains DDNS update failed. Response: {response.text}")
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to update Google Domains DDNS: {str(e)}")
-
+        raise ProviderError(self.disabled_reason)
