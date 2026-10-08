@@ -26,7 +26,7 @@ SCHEMAS = {
     "NoIP": ("username", "password", "hostname"),
     "SecurePoint": ("username", "password", "hostname"),
     "SpDYN": ("username", "password", "hostname"),
-    "YDNS": ("domain_id", "api_key"),
+    "YDNS": ("hostname", "username", "password"),
 }
 
 

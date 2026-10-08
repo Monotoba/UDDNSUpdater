@@ -45,6 +45,11 @@ def load_services(config_path, provider_classes):
         provider_class = provider_classes.get(settings.get("ddns_provider", "").strip())
         if provider_class is None:
             raise ConfigurationError(f"Service {index}: missing or unsupported ddns_provider.")
+        normalize = getattr(provider_class, "normalize_settings", None)
+        if normalize is not None:
+            settings = normalize(settings)
+        if provider_class.__name__ == "YDNS" and settings.get("hostname", "").strip().isdigit():
+            raise ConfigurationError(f"Service {index}: YDNS requires a hostname, not a numeric domain ID.")
         for key in provider_class.required_fields:
             value = settings.get(key, "")
             if not value.strip() or value.strip().upper().startswith("YOUR_"):
