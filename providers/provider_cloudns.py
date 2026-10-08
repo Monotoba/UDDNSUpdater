@@ -1,37 +1,21 @@
-from .ddns_provider import DDNSProvider
-import requests
+"""ClouDNS per-record IPv4 DynamicURL updates."""
+from .ddns_provider import DDNSProvider, ProviderError
+
 
 class CloudNS(DDNSProvider):
-    required_fields = ('username', 'password', 'hostname')
+    required_fields = ('api_key', 'hostname')
 
     def __init__(self, name, config):
         super().__init__(name, config)
-        self.username = self.config['username']
-        self.password = self.config['password']
+        self.api_key = self.config['api_key']
         self.hostname = self.config['hostname']
 
     def update_ddns(self):
-        try:
-            # Obtain the current external IP
-            external_ip = self.external_ip
-
-            # ClouDNS update URL (replace with the actual API endpoint)
-            update_url = 'https://api.cloudns.net/ddns/update'
-            params = {
-                'hostname': self.hostname,
-                'myip': external_ip,
-            }
-
-            auth = (self.username, self.password)
-
-            response = requests.get(update_url, params=params, auth=auth)
-            response.raise_for_status()
-
-            # Adjust the response parsing based on the actual API response format
-            if 'success' in response.text:
-                print(f"ClouDNS DDNS update for {self.hostname} successful.")
-            else:
-                print(f"ClouDNS DDNS update failed. Response: {response.text}")
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to update ClouDNS DDNS: {str(e)}")
-
+        ip = self.validate_ipv4(self.external_ip)
+        body = self.request_text(
+            'https://ipv4.cloudns.net/api/dynamicURL/',
+            {'q': self.api_key, 'ip': ip},
+        ).strip()
+        if body != 'OK':
+            raise ProviderError('ClouDNS returned an unrecognized or rejected update.')
+        return True

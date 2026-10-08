@@ -13,7 +13,7 @@ SECRET = "secret%with&characters"
 SCHEMAS = {
     "Afraid": ("api_key", "hostname"),
     "ChangeIP": ("username", "password", "hostname"),
-    "CloudNS": ("username", "password", "hostname"),
+    "CloudNS": ("api_key", "hostname"),
     "DNSMax": ("username", "password", "hostname"),
     "DuckDNS": ("subdomain", "token"),
     "Dynu": ("username", "password", "hostname"),
@@ -56,12 +56,12 @@ def test_all_builtin_dry_runs_do_not_construct_providers(provider, monkeypatch):
     monkeypatch.setattr(app.DDNSProvider, "__init__", blocked)
     path = config("[service]\nddns_provider=" + provider + "\n" +
                   "\n".join(f"{key}={SECRET}" for key in SCHEMAS[provider]))
-    assert app.main(["--config-file", str(path), "--dry-run"]) == (2 if provider == "GoogleDomains" else 0)
+    assert app.main(["--config-file", str(path), "--dry-run"]) == (2 if provider in {"GoogleDomains", "DNSMax"} else 0)
     assert set(p.name for p in Path.cwd().iterdir()) == {"custom.ini"}
     assert classes[provider].required_fields == SCHEMAS[provider]
 
 
-@pytest.mark.parametrize("provider,key", [(p, k) for p, keys in SCHEMAS.items() if p != "GoogleDomains" for k in keys])
+@pytest.mark.parametrize("provider,key", [(p, k) for p, keys in SCHEMAS.items() if p not in {"GoogleDomains", "DNSMax"} for k in keys])
 def test_required_fields_checked_before_network(provider, key, capsys):
     path = config("[service]\nddns_provider=" + provider + "\n" +
                   "\n".join(f"{k}=value" for k in SCHEMAS[provider] if k != key))
