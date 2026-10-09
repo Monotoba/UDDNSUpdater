@@ -116,7 +116,7 @@ def test_cli_rejection_has_failure_status(monkeypatch, tmp_path, capsys, cls):
         "\n".join(f"{k}={v}" for k,v in CONFIG.items()))
     mock_http(monkeypatch, "rejected " + SECRET)
     args = ["--no-log"]
-    if cls is SpDYN:
+    if cls in (SpDYN, YDNS):
         args += ["--state-file", str(tmp_path / "state.json"), "--refresh-seconds", "86400"]
     assert ddns_updater.main(args) == 1
     output = capsys.readouterr()

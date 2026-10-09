@@ -1,8 +1,8 @@
 # Accepted-update state foundation
 
 `update_state.py` provides a local accepted-update state store. The DDNS CLI
-now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN conservative stops are
-implemented; other providers remain unfinished; this is not readiness for unattended operation.
+now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS conservative stops
+are implemented; other providers remain unfinished; this is not readiness for unattended operation.
 
 ```python
 from update_state import open_state
@@ -272,3 +272,46 @@ remain ordinary failures without persistent backoff. Other provider controls and
 live validation remain unfinished; unattended scheduling is not ready. Tests cover
 cross-alias restart blocking, account/section changes, successful updates, HTTP
 rejections, state-write failures, and sanitized logging with all HTTP mocked.
+
+## YDNS conservative stops
+
+Normal YDNS CLI updates require --state-file and --refresh-seconds; missing options
+fail before discovery. Dry run remains available without state. The
+[official API-v1 guide](https://ydns.io/api/v1/) defines success as HTTP 200 with
+good, and documents 400 for invalid parameters, 401 for authentication issues, and
+404 for a missing host. It does not specify retry timing in that guide.
+
+The adapter retains exact good acceptance and now raises ProviderStopError for
+all rejected HTTP statuses or unconfirmed bodies. Unknown/temporary statuses such
+as 429 or 503 are conservative stops requiring review, not claims of permanent
+failure or provider-prescribed stop behavior. No cooldown interval is inferred,
+and no immediate retry loop is added. Response bodies are not stored or logged.
+
+The shared CLI machinery persists a provider-wide YDNS stop, aborts remaining
+services during the failing run, and checks later invocations before constructing
+the provider. Account/credential/host/section changes, including legacy-key changes,
+do not bypass controls in the same state file. This deliberately blocks unrelated
+YDNS records in that file rather than guessing whether the error is record-specific.
+Accepted-update records remain per configured service; they are preserved by a
+stop or its manual clearing. No-IP, Dynu, and Securepoint controls remain independent.
+
+After investigating and correcting the cause, with updater processes stopped,
+clear only YDNS deliberately through the Python API:
+
+```python
+from update_state import open_state
+from ddns_updater import provider_error_key
+from providers.provider_ydns import YDNS
+
+with open_state("/absolute/path/to/update-state.json") as state:
+    state.clear_error(provider_error_key(YDNS, {}))
+    state.save()
+```
+
+Legacy domain_id/api_key/api_username normalization is unchanged. Optional record_id
+selection is still not implemented. Direct adapter users must handle typed errors;
+transport/discovery backoff and live interoperability remain unvalidated. Other
+providers' controls are unfinished and unattended scheduling is still unavailable.
+Tests cover HTTP errors, exact acceptance, change detection, legacy aliases, restart
+blocking, configuration changes, explicit clearing, interrupted saves, and sanitized
+logs, with HTTP mocked and no live DNS updates.

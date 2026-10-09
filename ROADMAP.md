@@ -60,3 +60,8 @@ SecurePoint/SpDYN share a persistent conservative stop identity across both name
 Normal CLI updates require state options; retry timing remains unverified because
 the official response-code page is access-blocked. No cooldown interval is guessed.
 Other providers and transport backoff remain unfinished.
+
+YDNS now persists provider-wide conservative stops for rejected HTTP responses
+and unconfirmed bodies, checked before discovery. Normal CLI updates require
+state options. Retry timing is not specified by the reviewed API-v1 guide; no
+automatic cooldown is inferred. Other providers and transport backoff remain unfinished.
