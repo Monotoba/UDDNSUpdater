@@ -81,5 +81,6 @@ Legacy TaskN configurations now support validated daily planning with
 `python -m UTaskScheduler.scheduler --config-file tasks.ini --dry-run`.
 See [the scheduler guide](docs/SCHEDULER.md); installation remains unavailable.
 
-An offline [accepted-update state foundation](docs/UPDATE_STATE.md) is implemented.
-CLI change detection and provider cooldown integration remain unfinished.
+Opt-in [persistent change detection](docs/UPDATE_STATE.md) is implemented via
+`--state-file /absolute/path/to/state.json --refresh-seconds N`. Provider cooldown
+integration remains unfinished; unattended operation is not ready.
