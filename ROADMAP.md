@@ -79,3 +79,7 @@ remain unfinished.
 NamecheapDDNS now requires persistent CLI state and saves conservative provider-wide
 stops on HTTP rejection or unconfirmed XML responses. XML success checks remain
 unchanged. Transport backoff and controlled live validation remain unfinished.
+
+DuckDNS now requires persistent CLI state and saves conservative provider-wide
+stops on HTTP rejection, KO, or unconfirmed bodies. Exact non-verbose OK acceptance
+is unchanged. Transport backoff and controlled live validation remain unfinished.

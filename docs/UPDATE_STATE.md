@@ -1,7 +1,7 @@
 # Accepted-update state foundation
 
 `update_state.py` provides a local accepted-update state store. The DDNS CLI
-now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap conservative stops
+now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap/DuckDNS conservative stops
 are implemented; other providers remain unfinished; this is not readiness for unattended operation.
 
 ```python
@@ -417,3 +417,32 @@ with open_state('/absolute/path/to/state.json') as state:
 
 Transport/discovery backoff and live interoperability remain unverified. Direct
 adapter callers must manage state themselves.
+
+## DuckDNS conservative stops
+
+Normal DuckDNS CLI updates require `--state-file` and `--refresh-seconds`;
+dry-run remains offline without state. The non-verbose response must still be
+exactly OK after stripping outer whitespace. HTTP rejection, KO, or any unconfirmed
+body persists a provider-wide stop and aborts remaining updates in that run.
+Later runs check the stop before discovery. Changing tokens, subdomains, or section
+names cannot bypass it. All DuckDNS services sharing the state file are covered.
+This is conservative client policy; the official specification supplies no retry
+interval or explanation of the individual causes of KO. No cooldown is invented.
+
+Investigate the cause, then explicitly clear only this stop while retaining accepted
+entries:
+
+```python
+from update_state import open_state
+from ddns_updater import provider_error_key
+from providers.provider_duckddns import DuckDNS
+
+with open_state('/absolute/path/to/state.json') as state:
+    state.clear_error(provider_error_key(DuckDNS, {}))
+    state.save()
+```
+
+Transport/discovery backoff and live interoperability remain unverified. Direct
+adapter callers must manage state themselves. Multiple subnames remain supported
+in the existing comma-separated subdomain setting; accepted state covers that
+configured list as a whole.
