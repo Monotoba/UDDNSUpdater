@@ -80,3 +80,6 @@ see [the scheduler guide](docs/SCHEDULER.md). Native registration remains unavai
 Legacy TaskN configurations now support validated daily planning with
 `python -m UTaskScheduler.scheduler --config-file tasks.ini --dry-run`.
 See [the scheduler guide](docs/SCHEDULER.md); installation remains unavailable.
+
+An offline [accepted-update state foundation](docs/UPDATE_STATE.md) is implemented.
+CLI change detection and provider cooldown integration remain unfinished.
