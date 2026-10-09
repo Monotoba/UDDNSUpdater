@@ -1,9 +1,8 @@
 # Scheduler validation baseline
 
-Daily planning, Linux user-crontab previews, and macOS launchd previews are implemented, with no native
-task installation. Linux and macOS backends also block direct installation calls.
-The Windows backend still needs repair; its direct API must not be used
-to install tasks. DDNS providers lack persistent change/error controls required
+Daily planning and Linux, macOS, and Windows definition previews are implemented,
+with no native task installation. All three backends block direct installation
+calls. DDNS providers lack persistent change/error controls required
 for unattended use.
 
 ## Configuration
@@ -70,8 +69,8 @@ command arguments.
 
 ## Remaining repair order
 
-1. Linux and macOS definition previews are implemented. Repair Windows Task
-   Scheduler definitions next, with offline tests.
+1. Linux, macOS, and Windows definition previews are implemented with offline
+   tests. Native service acceptance and behavior remain to be validated.
 2. Reconcile the older Task-section parser, names, paths, and unsupported date/
    calendar features with the unified API; add complete upfront validation.
 3. Add persistent DDNS change detection and provider error/cooldown controls.
@@ -152,3 +151,45 @@ second positional `system_task` parameter is retained. Installation and legacy
 file-writing methods now raise `LaunchdPreviewError` without side effects.
 Tests round-trip plist contents; they do not install jobs or establish live
 launchd integration. Native installation remains unavailable.
+
+## Windows Task Scheduler preview
+
+```powershell
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --preview-windows --start-date 2026-10-09 -- 'C:\Python\python.exe' 'C:\Jobs\job.py'
+```
+
+Use your intended start date, not necessarily the example date. This Windows-only
+CLI mode requires an explicit valid YYYY-MM-DD date and is mutually exclusive
+with the other preview/dry-run modes. `--start-date` is rejected in other modes.
+The preview prints UTF-8 XML after complete validation, without creating files,
+calling schtasks, or registering a task. There is one daily CalendarTrigger per
+Hour/Minute pair with a full local date/time StartBoundary and DaysInterval=1;
+no unintended hourly repetition is added. Schedules over 48 triggers are rejected
+instead of being partially rendered or split into multiple tasks.
+
+The definition uses Microsoft's Task Scheduler namespace, separates the executable
+Command from Arguments, and serializes arguments using Python's MS C runtime
+quoting rules. This supports executables such as Python that follow those rules;
+other programs' argument parsers require separate validation. The executable must
+be an absolute Windows .exe path (including UNC paths); batch files and relative
+paths are rejected. XML-invalid/control characters and all percent characters in
+commands are rejected because Task Scheduler supports environment-variable
+expansion. XML metacharacters are escaped. No shell is inserted by the renderer;
+do not pass shell/interpreter command strings unless that is your deliberate job.
+
+See Microsoft's [daily task example](https://learn.microsoft.com/en-us/windows/win32/taskschd/daily-trigger-example--xml-),
+[trigger limits](https://learn.microsoft.com/en-us/windows/win32/taskschd/task-triggers),
+and [execution action](https://learn.microsoft.com/en-us/windows/win32/taskschd/execaction).
+Identity/logon policy, working directory, environment, executable existence,
+permissions, execution/settings defaults, service schema acceptance, and native
+sleep/wake/time-zone behavior remain unvalidated. Preview prints arguments; keep
+credentials in protected configuration files. This is not an installation guide.
+
+`scheduler.preview_windows(argv, start_date="2026-10-09")` returns XML.
+`WindowsTaskScheduler([hour, minute], argv).create_task_xml(start_date=...)`
+generates one trigger; `intervals=[[hour, minute], ...]` generates up to 48.
+`schedule(dry_run=True, start_date=...)` returns the preview; installation calls
+raise WindowsPreviewError. Existing constructor name/description parameters are
+retained; the name is validated but registration naming remains external to XML.
+Tests inspect the XML and run a harmless real Windows process argv round trip
+in Windows CI. No task is installed or executed through Task Scheduler.

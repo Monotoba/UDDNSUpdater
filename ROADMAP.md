@@ -31,4 +31,7 @@
 CI must never change DNS or install real system tasks. PyPI publication is on hold.
 
 Scheduler progress: Linux cron and macOS launchd previews are implemented and
-installation remains blocked. Windows definition repair is next.
+installation remains blocked. Windows XML previews are also implemented; native integration remains unvalidated.
+
+Windows preview: explicit start date, maximum 48 daily triggers, and offline
+XML/argument validation. Next: reconcile the legacy Task-section parser.

@@ -73,3 +73,6 @@ Licensed under [BSD-2-Clause](LICENSE).
 
 macOS scheduler definitions can now be inspected with `--preview-launchd`; see
 [the scheduler guide](docs/SCHEDULER.md). Native installation remains unavailable.
+
+Windows scheduler XML can now be inspected with `--preview-windows --start-date YYYY-MM-DD`;
+see [the scheduler guide](docs/SCHEDULER.md). Native registration remains unavailable.
