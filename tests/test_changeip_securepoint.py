@@ -109,7 +109,10 @@ def test_cli_status_and_redaction(monkeypatch, tmp_path, capsys, cls, accepted):
         "\n".join(f"{k}={v}" for k, v in CONFIG.items()))
     success = "200 Successful Update" if cls is ChangeIP else "nochg"
     calls, _ = setup(monkeypatch, success if accepted else "error " + SECRET)
-    assert ddns_updater.main(["--no-log"]) == (0 if accepted else 1)
+    args = ["--no-log"]
+    if cls is SecurePoint:
+        args += ["--state-file", str(tmp_path / "state.json"), "--refresh-seconds", "86400"]
+    assert ddns_updater.main(args) == (0 if accepted else 1)
     output = capsys.readouterr()
     assert SECRET not in output.out + output.err
     assert len(calls) == 2

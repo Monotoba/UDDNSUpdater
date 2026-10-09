@@ -3,6 +3,7 @@ import platform
 
 class NoIP(DDNSProvider):
     required_fields = ('username', 'password', 'hostname')
+    requires_persistent_state = True
 
     def update_ddns(self):
         external_ip = self.validate_ipv4(self.external_ip)

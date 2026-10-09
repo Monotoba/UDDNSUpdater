@@ -115,6 +115,9 @@ def test_cli_rejection_has_failure_status(monkeypatch, tmp_path, capsys, cls):
     (tmp_path / "config.ini").write_text("[service]\nddns_provider="+cls.__name__+"\n"+
         "\n".join(f"{k}={v}" for k,v in CONFIG.items()))
     mock_http(monkeypatch, "rejected " + SECRET)
-    assert ddns_updater.main(["--no-log"]) == 1
+    args = ["--no-log"]
+    if cls is SpDYN:
+        args += ["--state-file", str(tmp_path / "state.json"), "--refresh-seconds", "86400"]
+    assert ddns_updater.main(args) == 1
     output = capsys.readouterr()
     assert SECRET not in output.out + output.err

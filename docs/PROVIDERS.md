@@ -11,8 +11,8 @@ live updates or DNS propagation checks have been performed. No release is availa
 | NoIP | HTTPS Basic authentication; encoded hostname/IP; client-identifying User-Agent; good/nochg plus matching IPv4 for each hostname | Approved client identification, transport backoff, controlled live validation (state required for CLI stop/cooldown controls) |
 | Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied; persistent stop/retry controls | Transport backoff, controlled live validation (state required for CLI controls) |
 | ChangeIP | HTTPS Basic auth; encoded parameters; known plain-text success heading, matching IP when present | Provider response documentation/controlled live confirmation |
-| SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; exact good/nochg with matching IP when present | Full wiki access/controlled live confirmation |
-| SpDYN | Reuses the repaired SecurePoint implementation with its legacy class name/settings | Same wiki-access/live-validation limitations as SecurePoint |
+| SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; good/nochg checks; persistent conservative stops | Full wiki access, retry policy, transport backoff, controlled live confirmation |
+| SpDYN | Reuses SecurePoint and shares its persistent stop identity | Same wiki/retry-policy/live-validation limitations as SecurePoint |
 | YDNS | Documented trailing-slash HTTPS endpoint; host/IP parameters; Basic auth; exact good response; corrected credential settings with legacy aliases | Controlled live validation; optional record_id selection not implemented |
 | GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance | Controlled live validation; PAT/v3 migration; named multi-value A sets are replaced |
 | GoogleDomains | Disabled before network access; retained discoverable class and migration error | Service unavailable for migrated domains |
@@ -228,3 +228,13 @@ abuse. Opt-in persistent change detection can avoid recently accepted unchanged 
 Account-wide stop/error state remains unfinished, so repeated failures or sections
 can still send requests. Unattended scheduling remains blocked; no live DNS update
 or propagation check has been performed.
+
+### Securepoint/SpDYN error-control update
+
+Normal CLI updates for both adapter names require state options. Rejected HTTP
+responses or unconfirmed bodies persist a shared provider-wide stop checked before
+IP discovery, so switching adapter names cannot bypass it. The official return-code
+page remains access-blocked; retry timing was not verified and no automatic cooldown
+is inferred. Stops require investigation and explicit clearing. This conservative
+client behavior does not establish live interoperability or complete provider-policy
+compliance. See [state behavior and recovery](UPDATE_STATE.md).

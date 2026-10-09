@@ -1,7 +1,8 @@
 # Accepted-update state foundation
 
 `update_state.py` provides a local accepted-update state store. The DDNS CLI
-now supports opt-in change detection, described below. No-IP and Dynu stop/cooldown controls are implemented; other providers remain unfinished; this is not readiness for unattended operation.
+now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN conservative stops are
+implemented; other providers remain unfinished; this is not readiness for unattended operation.
 
 ```python
 from update_state import open_state
@@ -226,3 +227,48 @@ blocking, expiry, code details, stop codes, HTTP rejections, cross-account bypas
 attempts, sanitized logging, persistence failures, and independent No-IP/Dynu scope.
 All HTTP is mocked; no live DNS updates were performed. Other providers' persistent
 error controls remain incomplete, so unattended scheduling is still unavailable.
+
+## Securepoint and SpDYN conservative stops
+
+Normal SecurePoint/SpDYN CLI updates require --state-file and --refresh-seconds;
+missing options fail before discovery. Dry run remains available without state.
+Both names use the same shared provider-wide error identity. An error recorded
+through either name blocks both names, all sections/accounts in that state file,
+and any renamed/reconfigured section before IP discovery on later runs. Acceptance
+records remain per configured service, so changing an adapter name can cause a
+fresh update once no stop is active.
+
+The provider's [official return-code page](https://wiki.securepoint.de/SPDyn/R%C3%BCckgabecodes)
+was blocked by its access protection during this review. Indexed official content
+identifies abuse as a blocked-host error, but a complete current response/retry
+specification could not be verified. No automatic cooldown interval is invented.
+All rejected HTTP statuses and unconfirmed response bodies (including 911) raise
+ProviderStopError and persist an intervention-required stop. This is conservative
+client policy, not a statement that every such error is permanently fatal or that
+the provider mandates this exact behavior. Existing good/nochg acceptance parsing
+is retained, with matching IPv4 when present; full live protocol validation remains
+outstanding.
+
+A typed stop aborts remaining services in that run and saves/logs only sanitized
+control information. On subsequent runs the shared control is checked before
+constructing either adapter. Correct the cause and establish the provider's retry
+requirements before deliberately clearing the stop. With updater processes stopped:
+
+```python
+from update_state import open_state
+from ddns_updater import provider_error_key
+from providers.provider_securepoint import SecurePoint
+
+with open_state("/absolute/path/to/update-state.json") as state:
+    state.clear_error(provider_error_key(SecurePoint, {}))
+    state.save()
+```
+
+Using SpDYN instead of SecurePoint in this API targets the same control. No
+automatic stop reset is implemented. No-IP/Dynu error identities and existing
+state format remain unchanged. Direct adapter callers must handle typed errors;
+state is not opened automatically by adapters. Transport/discovery exceptions
+remain ordinary failures without persistent backoff. Other provider controls and
+live validation remain unfinished; unattended scheduling is not ready. Tests cover
+cross-alias restart blocking, account/section changes, successful updates, HTTP
+rejections, state-write failures, and sanitized logging with all HTTP mocked.

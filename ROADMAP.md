@@ -55,3 +55,8 @@ Dynu now persists provider-wide stop controls and ten-minute retry controls for
 911/servererror/dnserr (the latter two use a conservative client delay). HTTP
 rejections require review. No-IP and Dynu both require state options for normal
 CLI updates; other providers and transport backoff remain unfinished.
+
+SecurePoint/SpDYN share a persistent conservative stop identity across both names.
+Normal CLI updates require state options; retry timing remains unverified because
+the official response-code page is access-blocked. No cooldown interval is guessed.
+Other providers and transport backoff remain unfinished.
