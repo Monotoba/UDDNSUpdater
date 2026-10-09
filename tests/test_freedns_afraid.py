@@ -93,7 +93,7 @@ def test_cli_rejection_returns_failure_without_secrets(monkeypatch, tmp_path, ca
     (tmp_path/'config.ini').write_text('[service]\nddns_provider='+cls.__name__+'\n'+
         '\n'.join(f'{k}={v}' for k,v in CONFIG.items()))
     mock_http(monkeypatch, 'Rejected '+KEY)
-    assert ddns_updater.main(['--no-log']) == 1
+    assert ddns_updater.main(['--no-log', '--state-file', str(tmp_path/'state.json'), '--refresh-seconds', '60']) == 1
     output = capsys.readouterr()
     assert KEY not in output.out+output.err
 
