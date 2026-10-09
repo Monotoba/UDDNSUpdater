@@ -155,8 +155,7 @@ def test_cli_returns_correct_status_without_secrets(monkeypatch, tmp_path, capsy
         "\n".join(f"{k}={v}" for k, v in SETTINGS.items()))
     calls, _ = mock_http(monkeypatch, f"nochg {IP}" if accepted else "badauth " + SECRET)
     args = ["--no-log"]
-    if cls is NoIP:
-        args += ["--state-file", str(tmp_path / "state.json"), "--refresh-seconds", "86400"]
+    args += ["--state-file", str(tmp_path / "state.json"), "--refresh-seconds", "86400"]
     assert ddns_updater.main(args) == (0 if accepted else 1)
     output = capsys.readouterr()
     assert SECRET not in output.out + output.err

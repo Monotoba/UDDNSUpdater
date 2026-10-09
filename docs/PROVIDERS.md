@@ -9,7 +9,7 @@ live updates or DNS propagation checks have been performed. No release is availa
 | NamecheapDDNS | Encoded parameters; same HTTP rules; XML structure, zero error count, Done=true, matching IP, no error entries; rejects malformed/duplicate required fields and DOCTYPE | Controlled live response/propagation validation |
 | DuckDNS | Encoded domains/token/IP; same HTTP rules; exact OK response without verbose mode | Controlled live acceptance/propagation validation |
 | NoIP | HTTPS Basic authentication; encoded hostname/IP; client-identifying User-Agent; good/nochg plus matching IPv4 for each hostname | Approved client identification, transport backoff, controlled live validation (state required for CLI stop/cooldown controls) |
-| Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied | Persistent error/cooldown controls, controlled live validation |
+| Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied; persistent stop/retry controls | Transport backoff, controlled live validation (state required for CLI controls) |
 | ChangeIP | HTTPS Basic auth; encoded parameters; known plain-text success heading, matching IP when present | Provider response documentation/controlled live confirmation |
 | SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; exact good/nochg with matching IP when present | Full wiki access/controlled live confirmation |
 | SpDYN | Reuses the repaired SecurePoint implementation with its legacy class name/settings | Same wiki-access/live-validation limitations as SecurePoint |
@@ -80,8 +80,13 @@ Dynu uses [its documented HTTPS protocol](https://www.dynu.com/en-US/DynamicDNS/
 with Basic authentication and the existing username/password/hostname keys.
 `myipv6=no` prevents changes to IPv6 records. Exact good/nochg codes are accepted;
 if an IPv4 detail is present, it must match the request. Unexpected details or
-rejection codes fail. Its 911 response requires a ten-minute suspension; that
-persistent cooldown is not implemented. No retries or automatic scheduling occur.
+rejection codes fail. Persistent controls now enforce a ten-minute 911 suspension.
+servererror/dnserr also receive a ten-minute conservative client delay; the provider
+does not specify their interval. Other unconfirmed/HTTP responses persist a stop
+requiring review. Normal CLI updates require state options, and controls cover all
+Dynu sections/accounts in the same file, checked before discovery. No immediate
+retry loop or native scheduling occurs. See [state behavior](UPDATE_STATE.md);
+transport backoff and controlled live validation remain incomplete.
 
 ## ChangeIP and Securepoint: limited response evidence
 

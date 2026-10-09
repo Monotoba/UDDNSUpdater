@@ -77,9 +77,9 @@ def service_state_key(section, provider_class, settings):
 
 
 def provider_error_key(provider_class, settings):
-    # Conservative No-IP provider-wide scope: switching section/account/agent
+    # Conservative No-IP/Dynu provider-wide scope: switching section/account/agent
     # must not bypass a persisted provider stop or outage cooldown.
-    scope = {} if provider_class.__name__ == 'NoIP' else {
+    scope = {} if provider_class.__name__ in {'NoIP', 'Dynu'} else {
         field: settings.get(field, '') for field in ('username', 'password', 'user_agent')}
     return service_state_key('provider-error-scope', provider_class, scope)
 
@@ -125,8 +125,8 @@ def main(argv=None):
         print(f"Configuration valid for {len(services)} service(s). No requests sent.")
         return 0
 
-    if args.state_file is None and any(cls.__name__ == 'NoIP' for _, cls, _ in services):
-        print("No-IP updates require --state-file and --refresh-seconds for persistent error controls.", file=sys.stderr)
+    if args.state_file is None and any(cls.__name__ in {'NoIP', 'Dynu'} for _, cls, _ in services):
+        print("No-IP and Dynu updates require --state-file and --refresh-seconds for persistent error controls.", file=sys.stderr)
         return 2
 
     try:

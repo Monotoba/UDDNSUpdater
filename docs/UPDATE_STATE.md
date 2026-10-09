@@ -1,7 +1,7 @@
 # Accepted-update state foundation
 
 `update_state.py` provides a local accepted-update state store. The DDNS CLI
-now supports opt-in change detection, described below. No-IP stop/cooldown controls are implemented; other providers remain unfinished; this is not readiness for unattended operation.
+now supports opt-in change detection, described below. No-IP and Dynu stop/cooldown controls are implemented; other providers remain unfinished; this is not readiness for unattended operation.
 
 ```python
 from update_state import open_state
@@ -51,7 +51,7 @@ who can modify the parent directory or race filesystem operations. Use a trusted
 local directory, not a shared/untrusted directory or network filesystem.
 
 Tests cover round trips, expiry/future timestamps, competing locks, invalid data,
-size/entry limits, and failed writes. CLI integration saves only explicit provider success. No-IP error/cooldown persistence is implemented. Next: other providers and
+size/entry limits, and failed writes. CLI integration saves only explicit provider success. No-IP and Dynu error/cooldown persistence is implemented. Next: other providers and
 controlled recovery behavior.
 
 ## Opt-in CLI change detection
@@ -177,3 +177,52 @@ requirements, live response behavior, and other providers remain release blocker
 Tests use mocked HTTP for 911/500, permanent stops, mixed responses, restart
 blocking before discovery, expiry, configuration-change bypass attempts, and v1
 migration. No live DNS updates were performed.
+
+## Dynu stop and cooldown controls
+
+Normal Dynu CLI updates now also require --state-file and --refresh-seconds;
+missing options return exit 2 before discovery. Dry run remains available without
+state. Dynu uses a separate provider-wide error identity, so its control affects
+all Dynu sections/accounts sharing the state file while leaving No-IP controls
+independent. Section/account/credential changes do not bypass a control.
+
+Dynu's [IP update protocol](https://www.dynu.com/en-US/DynamicDNS/IP-Update-Protocol)
+requires a ten-minute suspension for 911 and permits retries for servererror and
+dnserr without a specified delay. The adapter raises ProviderRetryError(600) for
+all three codes; ten minutes for servererror/dnserr is a conservative client policy,
+not a provider-prescribed interval. A response code may include extra information;
+only its first word determines these retryable errors, and details are not logged
+or stored. No immediate retry loop is introduced: retry occurs only on a later
+invocation after the persistent control expires.
+
+Other failed/unconfirmed responses (including unknown, badauth, notfqdn, numhost,
+abuse, nohost, !donator, wrong IPs, or malformed success bodies) raise
+ProviderStopError. All rejected HTTP statuses also become persistent stops. Dynu's
+protocol page does not prescribe HTTP retry intervals; this implementation requires
+review rather than guessing a delay or risking an early retry against Retry-After.
+This is conservative client handling, not a claim that every status is permanent.
+
+The existing control machinery persists the error, stops remaining services during
+that run, and checks blocked services before any IP discovery on later runs.
+Stops require investigation/correction and explicit manual clearing. To clear only
+Dynu after resolving the cause, with updater processes stopped:
+
+```python
+from update_state import open_state
+from ddns_updater import provider_error_key
+from providers.provider_dynu import Dynu
+
+with open_state("/absolute/path/to/update-state.json") as state:
+    state.clear_error(provider_error_key(Dynu, {}))
+    state.save()
+```
+
+Do not clear an unexpired cooldown to retry early. Acceptance records remain intact;
+a successful update after cooldown expiry clears the error record. Schema remains
+version 2. No-IP's 30-minute policy is unchanged. Clock, separate-state-file,
+transport/discovery backoff, and live-validation limits described above still apply.
+Direct adapter callers must handle typed errors themselves. Tests cover restart
+blocking, expiry, code details, stop codes, HTTP rejections, cross-account bypass
+attempts, sanitized logging, persistence failures, and independent No-IP/Dynu scope.
+All HTTP is mocked; no live DNS updates were performed. Other providers' persistent
+error controls remain incomplete, so unattended scheduling is still unavailable.
