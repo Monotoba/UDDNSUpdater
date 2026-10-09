@@ -97,8 +97,9 @@ line `200 Successful Update`, optionally followed by `(Address Used: IPv4)`;
 an included address must match the requested one. Later diagnostic lines are
 ignored. This heading appears in [DrayTek's manufacturer manual](https://draytek.com/download_de/Firmwares-Router/Vigor2962/DrayTek_UG_Vigor2962_V1.61.pdf),
 an integration example rather than a current ChangeIP response specification.
-Unknown/HTML bodies fail. Controlled live confirmation or a provider response
-specification is needed before claiming complete service compatibility.
+Unknown/HTML bodies now persist a conservative stop in normal CLI usage, which
+requires state options. Controlled live confirmation or a provider response
+specification is still needed before claiming complete service compatibility.
 
 Securepoint's indexed official wiki identifies `https://update.spdyn.de/nic/update`
 and good/nochg status codes, replacing the prototype's unrelated securepoint.de
@@ -248,3 +249,15 @@ other rejected statuses use conservative client stops without an inferred cooldo
 Legacy credential aliases and exact good acceptance are preserved. Investigate the
 cause before explicit clearing; see [state behavior and recovery](UPDATE_STATE.md).
 Transport backoff, optional record selection, and live validation remain incomplete.
+
+## ChangeIP error-control and eligibility update
+
+Normal CLI updates require state options and persist provider-wide conservative
+stops for rejected/unconfirmed updates, checked before discovery. No retry interval
+is inferred. ChangeIP announced discontinuation of DDNS domains ending in changeip.com
+on June 2, 2026; those configured targets are now rejected up front in the CLI and
+direct adapter, without disabling unrelated domains or the whole service. Sets
+*1/*2 remain selectors whose membership/eligibility the client cannot inspect.
+See [announcement](https://www.changeip.com/accounts/index.php/announcements) and
+[state behavior/recovery](UPDATE_STATE.md). Existing success-heading parsing is
+retained; current full response compatibility and live validation remain outstanding.

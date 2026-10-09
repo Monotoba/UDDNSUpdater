@@ -1,7 +1,7 @@
 # Accepted-update state foundation
 
 `update_state.py` provides a local accepted-update state store. The DDNS CLI
-now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS conservative stops
+now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP conservative stops
 are implemented; other providers remain unfinished; this is not readiness for unattended operation.
 
 ```python
@@ -315,3 +315,51 @@ providers' controls are unfinished and unattended scheduling is still unavailabl
 Tests cover HTTP errors, exact acceptance, change detection, legacy aliases, restart
 blocking, configuration changes, explicit clearing, interrupted saves, and sanitized
 logs, with HTTP mocked and no live DNS updates.
+
+## ChangeIP conservative stops and discontinued targets
+
+Normal ChangeIP CLI updates require --state-file and --refresh-seconds. Rejected
+HTTP responses or unconfirmed bodies raise ProviderStopError, persist a provider-wide
+stop, and block later ChangeIP services before discovery. Account/section/credential
+changes do not bypass this control in the same state file. No cooldown interval is
+inferred: the reviewed request/history guides do not specify retry timing.
+
+ChangeIP's [June 2, 2026 announcement](https://www.changeip.com/accounts/index.php/announcements)
+says DDNS domains ending in changeip.com were discontinued. Configured targets at
+that suffix, including case variants and a trailing dot, are now rejected before
+state/log/network operations. Direct adapter construction also rejects them before
+IP discovery. All service configurations are checked up front, so a retired target
+in a later section prevents earlier requests. The CLI reports a sanitized invalid
+or discontinued settings error (exit 2); this is separate from a persisted stop.
+This does not disable the entire provider or imply other domains are retired.
+
+The [request guide](https://www.changeip.com/accounts/index.php/knowledgebase/34/DDNS-API-Information.html)
+allows hostname selectors *1/*2 for sets. Those selectors and unrelated domains
+are not rejected by the suffix check, but the client cannot inspect set membership:
+verify account/record eligibility with the provider before use. The
+[update-history guide](https://www.changeip.com/accounts/index.php/knowledgebase/47/Understanding-the-Dynamic-DNS-Update-History-page.html)
+describes 402 as a premium-service issue and 422 as an incorrect hostname. History
+result codes do not establish complete HTTP/body syntax. Existing first-line
+200 Successful Update parsing, optional matching Address Used IP, and ignored later
+diagnostic lines remain unchanged and still need controlled live confirmation.
+
+After investigating/correcting a stop, with updater processes stopped, clear only
+ChangeIP deliberately while preserving accepted state:
+
+```python
+from update_state import open_state
+from ddns_updater import provider_error_key
+from providers.provider_changeip import ChangeIP
+
+with open_state("/absolute/path/to/update-state.json") as state:
+    state.clear_error(provider_error_key(ChangeIP, {}))
+    state.save()
+```
+
+This stop behavior is conservative client policy, not a statement that every HTTP
+or provider failure is permanent. Direct adapter callers must handle typed errors.
+Transport/discovery backoff and full response/retry compatibility remain unfinished;
+other provider controls and unattended scheduling are not ready. Tests cover
+retired suffixes, unrelated names/sets, all-service validation, HTTP/body failures,
+restart blocking, success/change detection, manual clearing, interrupted saves,
+and sanitized logs with mocked HTTP and no live DNS updates.
