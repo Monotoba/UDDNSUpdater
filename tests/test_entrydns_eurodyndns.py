@@ -130,7 +130,7 @@ def test_cli_reports_acceptance_or_failure(monkeypatch, tmp_path, capsys, cls, c
     path.write_text('[service]\nddns_provider='+cls.__name__+'\n'+
         '\n'.join(f'{k}={v}' for k,v in config.items()))
     mock_http(monkeypatch, body if accepted else 'rejected '+SECRET)
-    assert ddns_updater.main(['--config-file', str(path), '--no-log']) == (0 if accepted else 1)
+    assert ddns_updater.main(['--config-file', str(path), '--no-log', '--state-file', str(tmp_path/'state.json'), '--refresh-seconds', '60']) == (0 if accepted else 1)
     output = capsys.readouterr()
     assert SECRET not in output.out+output.err
     assert ('provider accepted' in output.out) == accepted

@@ -20,7 +20,7 @@ live updates or DNS propagation checks have been performed. No release is availa
 | CloudNS | Documented IPv4 DynamicURL endpoint; encoded per-record q key and ip; shared HTTP protections; exact OK response | Controlled live acceptance/propagation validation; optional JSON/failover parameters not implemented |
 | DNSMax | Disabled before network access; retained class with migration errors | Provider closed January 27, 2026 |
 | EntryDNS | Documented per-record HTTPS GET; encoded token path and explicit ip; shared HTTP protections; exact OK policy | Provider response specification/controlled live confirmation; token-to-hostname association not verified |
-| EuroDynDNS | Documented HTTPS update endpoint; encoded hostname/myip; Basic auth; single good/nochg status with matching IPv4 when present | Persistent change/error controls; controlled live response/propagation validation |
+| EuroDynDNS | Documented HTTPS update endpoint; encoded hostname/myip; Basic auth; single good/nochg status with matching IPv4 when present; persistent conservative stops | Transport backoff; controlled live response/propagation validation |
 
 The shared discovery endpoint is `https://api.ipify.org`. It returns an IPv4
 address in plain text according to [ipify's documentation](https://www.ipify.org/).
@@ -225,9 +225,11 @@ not explicitly specified on the provider page. Rejection and unknown bodies fail
 
 EuroDNS says the service requires its nameservers and activated dynamic hosts,
 and does not support round-robin records. Repeated unchanged updates can return
-abuse. Opt-in persistent change detection can avoid recently accepted unchanged updates.
-Account-wide stop/error state remains unfinished, so repeated failures or sections
-can still send requests. Unattended scheduling remains blocked; no live DNS update
+abuse. Normal CLI updates now require persistent state options. Change detection
+avoids recently accepted unchanged updates. Rejected HTTP responses and unconfirmed
+bodies persist a provider-wide stop before subsequent discovery, including abuse
+and dnserr. The documentation gives no retry interval; automatic recovery is not
+inferred. Investigate and explicitly clear the stop as described in UPDATE_STATE.md. Unattended scheduling remains blocked; no live DNS update
 or propagation check has been performed.
 
 ### Securepoint/SpDYN error-control update
