@@ -1,12 +1,12 @@
 # Provider repair status
 
-Reviewed on 2026-10-08. All validation below is offline with mocked HTTP. No
+Reviewed on 2026-10-09. All validation below is offline with mocked HTTP. No
 live updates or DNS propagation checks have been performed. No release is available.
 
 | Component | Implemented checks | Outstanding work |
 | --- | --- | --- |
 | Shared IPv4 discovery | HTTPS ipify IPv4 endpoint; strict IPv4 parsing; HTTP 200 required; redirects disabled; connect/read timeouts | Controlled live check |
-| NamecheapDDNS | Encoded parameters; same HTTP rules; XML structure, zero error count, Done=true, matching IP, no error entries; rejects malformed/duplicate required fields and DOCTYPE | Controlled live response/propagation validation |
+| NamecheapDDNS | Encoded parameters; same HTTP rules; XML structure, zero error count, Done=true, matching IP, no error entries; rejects malformed/duplicate required fields and DOCTYPE; persistent conservative stops | Transport backoff; controlled live response/propagation validation |
 | DuckDNS | Encoded domains/token/IP; same HTTP rules; exact OK response without verbose mode | Controlled live acceptance/propagation validation |
 | NoIP | HTTPS Basic authentication; encoded hostname/IP; client-identifying User-Agent; good/nochg plus matching IPv4 for each hostname | Approved client identification, transport backoff, controlled live validation (state required for CLI stop/cooldown controls) |
 | Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied; persistent stop/retry controls | Transport backoff, controlled live validation (state required for CLI controls) |
@@ -45,7 +45,9 @@ are 5/15 seconds, not a total wall-clock deadline. Redirects and unexpected HTTP
 statuses are rejected; GoDaddy also accepts an empty 204 response. Bodies are limited to 65,536 characters **before parsing**, after
 Requests has downloaded them; this is not a streaming/download memory limit.
 Responses are closed after use, and exceptions omit raw request URLs and bodies.
-There are no retries, IPv6 updates, cache, or propagation checks.
+There are no automatic request retries, IPv6 updates, or propagation checks.
+The CLI supports persistent accepted-update caching and selected provider error
+controls; see [state behavior](UPDATE_STATE.md).
 
 All 16 classes have now been audited: 14 active adapter classes have repaired
 request/response handling, and GoogleDomains/DNSMax are disabled. This completes

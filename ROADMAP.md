@@ -75,3 +75,7 @@ EuroDynDNS now requires persistent CLI state and saves conservative provider-wid
 stops for HTTP rejection or unconfirmed responses. Success syntax is unchanged;
 no undocumented retry interval is inferred. Transport backoff and live validation
 remain unfinished.
+
+NamecheapDDNS now requires persistent CLI state and saves conservative provider-wide
+stops on HTTP rejection or unconfirmed XML responses. XML success checks remain
+unchanged. Transport backoff and controlled live validation remain unfinished.

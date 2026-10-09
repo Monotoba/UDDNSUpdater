@@ -181,11 +181,11 @@ def test_real_cli_reports_acceptance_or_failure(monkeypatch, tmp_path, capsys, a
                       "\n".join(f"{key}={value}" for key, value in SETTINGS[cls].items()))
     body = (SUCCESS if cls is NamecheapDDNS else "OK") if accepted else "KO " + SECRET
     responses(monkeypatch, [Response(IP), Response(body)])
-    assert ddns_updater.main(["--no-log"]) == (0 if accepted else 1)
+    assert ddns_updater.main(["--no-log", "--state-file", str(tmp_path/"state.json"), "--refresh-seconds", "60"]) == (0 if accepted else 1)
     output = capsys.readouterr()
     assert SECRET not in output.out + output.err
     if accepted:
         assert "provider accepted" in output.out
         assert "propagation is unverified" in output.out
     else:
-        assert "update failed" in output.err
+        assert ("requires intervention" if cls is NamecheapDDNS else "update failed") in output.err
