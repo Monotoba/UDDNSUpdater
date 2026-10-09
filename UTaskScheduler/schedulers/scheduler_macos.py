@@ -1,54 +1,55 @@
-import os
+"""macOS launchd definition generation; installation remains disabled."""
+import plistlib
+import re
+
+
+class LaunchdPreviewError(ValueError):
+    """Controlled definition or installation error."""
+
 
 class MacTaskScheduler:
-    def __init__(self, schedule_args, system_task=False):
+    def __init__(self, schedule_args, system_task=False, *, command=None,
+                 label="org.monotoba.uddnsupdater"):
         self.schedule_args = schedule_args
         self.system_task = system_task
+        self.command = command
+        self.label = label
 
-    def schedule(self):
-        cron_schedule = " ".join(map(str, self.schedule_args))
-        cron_command = f"python ddns_updater.py --schedule {cron_schedule}"
-
+    def render_plist(self, *, intervals=None):
         if self.system_task:
-            self.create_system_task(cron_schedule, cron_command)
-        else:
-            self.create_user_task(cron_schedule, cron_command)
+            raise LaunchdPreviewError("System launchd definitions are unavailable.")
+        if (not isinstance(self.label, str) or len(self.label) > 200
+                or not re.fullmatch(r"[A-Za-z0-9]+(?:[.-][A-Za-z0-9_-]+)+", self.label)):
+            raise LaunchdPreviewError("Invalid launchd label.")
+        if (not isinstance(self.command, (list, tuple)) or not self.command
+                or not isinstance(self.command[0], str) or not self.command[0].startswith("/")
+                or any(not isinstance(arg, str) or any(ord(c) < 32 and c != "\t" for c in arg)
+                       or any(0xD800 <= ord(c) <= 0xDFFF or ord(c) in (0xFFFE, 0xFFFF) for c in arg)
+                       for arg in self.command)):
+            raise LaunchdPreviewError("Launchd preview requires XML-safe arguments and an absolute executable.")
+        times = [self.schedule_args] if intervals is None else intervals
+        if not isinstance(times, (list, tuple)) or not times:
+            raise LaunchdPreviewError("Launchd preview requires daily trigger times.")
+        calendar = []
+        for time in times:
+            if (not isinstance(time, (list, tuple)) or len(time) != 2
+                    or any(type(value) is not int for value in time)
+                    or not 0 <= time[0] < 24 or not 0 <= time[1] < 60):
+                raise LaunchdPreviewError("Invalid launchd daily trigger time.")
+            calendar.append({"Hour": time[0], "Minute": time[1]})
+        return plistlib.dumps({"Label": self.label, "ProgramArguments": list(self.command),
+                              "StartCalendarInterval": calendar}, sort_keys=False).decode("utf-8")
 
-    def create_system_task(self, cron_schedule, cron_command):
-        plist_file_path = "/Library/LaunchDaemons/com.example.mytask.plist"
-        self.write_plist_file(plist_file_path, cron_schedule, cron_command)
-        os.system(f"launchctl load {plist_file_path}")
+    def schedule(self, *, dry_run=False):
+        if dry_run:
+            return self.render_plist()
+        raise LaunchdPreviewError("Native task installation is unavailable; use a preview.")
 
-    def create_user_task(self, cron_schedule, cron_command):
-        plist_file_path = os.path.expanduser("~/Library/LaunchAgents/com.example.mytask.plist")
-        self.write_plist_file(plist_file_path, cron_schedule, cron_command)
-        os.system(f"launchctl load {plist_file_path}")
+    def create_system_task(self, *args, **kwargs):
+        raise LaunchdPreviewError("Native task installation is unavailable; use a preview.")
 
-    def write_plist_file(self, plist_file_path, cron_schedule, cron_command):
-        plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.example.mytask</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/bin/bash</string>
-        <string>-c</string>
-        <string>{cron_command}</string>
-    </array>
-    <key>StartCalendarInterval</key>
-    <array>
-        <dict>
-            <key>Hour</key>
-            <integer>{self.schedule_args[0]}</integer>
-            <key>Minute</key>
-            <integer>{self.schedule_args[1]}</integer>
-        </dict>
-    </array>
-</dict>
-</plist>
-"""
-        with open(plist_file_path, "w") as plist_file:
-            plist_file.write(plist_content)
-            print(f"Created .plist file: {plist_file_path}")
+    def create_user_task(self, *args, **kwargs):
+        raise LaunchdPreviewError("Native task installation is unavailable; use a preview.")
+
+    def write_plist_file(self, *args, **kwargs):
+        raise LaunchdPreviewError("Native task installation is unavailable; use a preview.")

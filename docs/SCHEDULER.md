@@ -1,8 +1,8 @@
 # Scheduler validation baseline
 
-Daily planning and Linux user-crontab previews are implemented, with no native
-task installation. The Linux backend now also blocks direct installation calls.
-macOS and Windows backends still need repair; their direct APIs must not be used
+Daily planning, Linux user-crontab previews, and macOS launchd previews are implemented, with no native
+task installation. Linux and macOS backends also block direct installation calls.
+The Windows backend still needs repair; its direct API must not be used
 to install tasks. DDNS providers lack persistent change/error controls required
 for unattended use.
 
@@ -70,8 +70,8 @@ command arguments.
 
 ## Remaining repair order
 
-1. Linux user-crontab generation and preview are implemented. Repair macOS
-   launchd and Windows Task Scheduler definitions next, with offline tests.
+1. Linux and macOS definition previews are implemented. Repair Windows Task
+   Scheduler definitions next, with offline tests.
 2. Reconcile the older Task-section parser, names, paths, and unsupported date/
    calendar features with the unified API; add complete upfront validation.
 3. Add persistent DDNS change detection and provider error/cooldown controls.
@@ -121,3 +121,34 @@ entry; `render_cron_line()` returns its entry without the header/newline. The
 backend's `schedule(dry_run=True)` and `schedule_linux(dry_run=True)` return a
 preview. Calls without dry_run raise CronPreviewError; system-task generation
 is explicitly unavailable. Arguments must be a list or tuple, not a shell string.
+
+## macOS launchd preview
+
+```sh
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --preview-launchd -- /absolute/path/to/python /absolute/path/to/job.py
+```
+
+This macOS-only CLI mode is mutually exclusive with dry run and cron preview.
+It prints one XML plist after validating the complete schedule, without writing
+files or invoking launchctl. The definition uses the label
+`org.monotoba.uddnsupdater`, literal `ProgramArguments` (no shell), and a
+`StartCalendarInterval` array containing every Hour/Minute pair. XML-sensitive
+characters are escaped by Python's plist serializer. XML-invalid characters,
+NUL/newlines, relative executable paths, and invalid trigger times are rejected.
+
+See Apple's [timed-job documentation](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/ScheduledJobs.html)
+and [launchd property-list manual](https://github.com/apple-oss-distributions/launchd/blob/main/man/launchd.plist.5).
+The preview is intended as a user-agent definition; system-daemon generation
+is unavailable. Working directory, environment, executable existence, user
+permissions, login/session lifecycle, sleep/wake and daylight-saving behavior
+remain unvalidated. Use absolute paths for job resources. Preview prints command
+arguments; keep credentials in protected configuration files.
+
+`scheduler.preview_launchd(command)` returns the XML string. The pure backend
+`MacTaskScheduler([hour, minute], command=argv, label="org.example.job")`
+provides `render_plist()` and `schedule(dry_run=True)`. `render_plist(intervals=...)`
+accepts a nonempty list of daily Hour/Minute pairs. The constructor's existing
+second positional `system_task` parameter is retained. Installation and legacy
+file-writing methods now raise `LaunchdPreviewError` without side effects.
+Tests round-trip plist contents; they do not install jobs or establish live
+launchd integration. Native installation remains unavailable.
