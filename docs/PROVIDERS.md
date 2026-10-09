@@ -13,7 +13,7 @@ live updates or DNS propagation checks have been performed. No release is availa
 | ChangeIP | HTTPS Basic auth; encoded parameters; known plain-text success heading, matching IP when present | Provider response documentation/controlled live confirmation |
 | SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; good/nochg checks; persistent conservative stops | Full wiki access, retry policy, transport backoff, controlled live confirmation |
 | SpDYN | Reuses SecurePoint and shares its persistent stop identity | Same wiki/retry-policy/live-validation limitations as SecurePoint |
-| YDNS | Documented trailing-slash HTTPS endpoint; host/IP parameters; Basic auth; exact good response; corrected credential settings with legacy aliases | Controlled live validation; optional record_id selection not implemented |
+| YDNS | Trailing-slash HTTPS endpoint; Basic auth; exact good; legacy aliases; persistent conservative stops | Transport backoff, live validation; optional record_id selection not implemented |
 | GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance | Controlled live validation; PAT/v3 migration; named multi-value A sets are replaced |
 | GoogleDomains | Disabled before network access; retained discoverable class and migration error | Service unavailable for migrated domains |
 | Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks | Controlled live response confirmation; account linked-update scope; v2 not implemented |
@@ -238,3 +238,13 @@ page remains access-blocked; retry timing was not verified and no automatic cool
 is inferred. Stops require investigation and explicit clearing. This conservative
 client behavior does not establish live interoperability or complete provider-policy
 compliance. See [state behavior and recovery](UPDATE_STATE.md).
+
+## YDNS error-control update
+
+Normal CLI updates now require state options. Rejected HTTP responses or unconfirmed
+bodies persist a provider-wide stop checked before discovery. The official API guide
+identifies HTTP 400/401/404 error meanings but does not specify retry timing; all
+other rejected statuses use conservative client stops without an inferred cooldown.
+Legacy credential aliases and exact good acceptance are preserved. Investigate the
+cause before explicit clearing; see [state behavior and recovery](UPDATE_STATE.md).
+Transport backoff, optional record selection, and live validation remain incomplete.

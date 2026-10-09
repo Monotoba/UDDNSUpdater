@@ -1,8 +1,9 @@
-from .ddns_provider import DDNSProvider, ProviderError
+from .ddns_provider import DDNSProvider, ProviderError, ProviderHTTPError, ProviderStopError
 
 
 class YDNS(DDNSProvider):
     required_fields = ("hostname", "username", "password")
+    requires_persistent_state = True
 
     @staticmethod
     def normalize_settings(config):
@@ -25,11 +26,14 @@ class YDNS(DDNSProvider):
 
     def update_ddns(self):
         external_ip = self.validate_ipv4(self.external_ip)
-        text = self.request_text(
-            "https://ydns.io/api/v1/update/",
-            params={"host": self.config["hostname"], "ip": external_ip},
-            auth=(self.config["username"], self.config["password"]),
-        )
+        try:
+            text = self.request_text(
+                "https://ydns.io/api/v1/update/",
+                params={"host": self.config["hostname"], "ip": external_ip},
+                auth=(self.config["username"], self.config["password"]),
+            )
+        except ProviderHTTPError:
+            raise ProviderStopError("YDNS HTTP rejection requires intervention.") from None
         if text.strip() != "good":
-            raise ProviderError("YDNS did not accept the update.")
+            raise ProviderStopError("YDNS did not confirm the update; intervention required.")
         return True
