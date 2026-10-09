@@ -46,3 +46,7 @@ identity/skip integration is implemented; provider cooldowns remain unfinished; 
 Opt-in state integration skips recently accepted unchanged IPv4 addresses and
 saves only explicit adapter success. Refresh policy is caller-supplied. Persistent
 provider error/cooldown controls are the next step.
+
+No-IP now persists provider-wide stop controls and 30-minute 911/HTTP-500
+cooldowns, checked before discovery. State v1 migrates on save to v2. Other
+providers, transport backoff, and controlled live validation remain unfinished.

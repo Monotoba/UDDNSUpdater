@@ -1,4 +1,4 @@
-"""Local accepted-update state; no network activity or automatic update skipping."""
+"""Local accepted-update and provider-control state; no network activity."""
 from contextlib import contextmanager
 import ipaddress
 import json
@@ -39,6 +39,7 @@ class UpdateState:
     def __init__(self, path):
         self.path = Path(path)
         self.entries = {}
+        self.errors = {}
 
     def load(self):
         try:
@@ -49,6 +50,7 @@ class UpdateState:
                     raw = handle.read(self.max_bytes + 1)
             except FileNotFoundError:
                 self.entries = {}
+                self.errors = {}
                 return
             if len(raw) > self.max_bytes:
                 raise StateError('State file exceeds size limit.')
@@ -60,8 +62,8 @@ class UpdateState:
                     result[key] = value
                 return result
             data = json.loads(raw, object_pairs_hook=unique)
-            if (not isinstance(data, dict) or set(data) != {'version', 'entries'}
-                    or type(data['version']) is not int or data['version'] != 1
+            if (not isinstance(data, dict) or set(data) != ({'version', 'entries'} if data.get('version') == 1 else {'version', 'entries', 'errors'})
+                    or type(data['version']) is not int or data['version'] not in (1, 2)
                     or not isinstance(data['entries'], dict) or len(data['entries']) > self.max_entries):
                 raise ValueError
             entries = {}
@@ -69,7 +71,10 @@ class UpdateState:
                 if not valid_key(key) or not isinstance(record, dict) or set(record) != {'ipv4', 'accepted_at'}:
                     raise ValueError
                 entries[key] = {'ipv4': ipv4(record['ipv4']), 'accepted_at': timestamp(record['accepted_at'])}
+            errors = data.get('errors', {})
+            self.validate_errors(errors)
             self.entries = entries
+            self.errors = errors
         except StateError:
             raise
         except (OSError, ValueError, UnicodeError, RecursionError, TypeError):
@@ -94,6 +99,49 @@ class UpdateState:
             raise StateError('State entry limit reached.')
         self.entries[key] = record
 
+    @classmethod
+    def validate_errors(cls, errors):
+        if not isinstance(errors, dict) or len(errors) > cls.max_entries:
+            raise StateError('Invalid provider error state.')
+        for key, record in errors.items():
+            if (not valid_key(key) or not isinstance(record, dict)
+                    or set(record) != {'kind', 'recorded_at', 'retry_at'}
+                    or record['kind'] not in ('stop', 'cooldown')):
+                raise StateError('Invalid provider error record.')
+            timestamp(record['recorded_at'])
+            if record['kind'] == 'stop':
+                if record['retry_at'] is not None:
+                    raise StateError('Invalid provider stop record.')
+            elif timestamp(record['retry_at']) <= record['recorded_at']:
+                raise StateError('Invalid provider retry time.')
+
+    def blocked(self, key, *, now):
+        if not valid_key(key):
+            raise StateError('Invalid state service key.')
+        now = timestamp(now)
+        record = self.errors.get(key)
+        if record and (record['kind'] == 'stop' or now < record['retry_at']):
+            return record['kind']
+        return None
+
+    def record_error(self, key, *, now, retry_seconds=None):
+        if not valid_key(key):
+            raise StateError('Invalid state service key.')
+        now = timestamp(now)
+        if retry_seconds is not None and (type(retry_seconds) is not int or retry_seconds <= 0):
+            raise StateError('Invalid provider retry interval.')
+        record = {'kind': 'stop' if retry_seconds is None else 'cooldown',
+                  'recorded_at': now,
+                  'retry_at': None if retry_seconds is None else timestamp(now + retry_seconds)}
+        if key not in self.errors and len(self.errors) >= self.max_entries:
+            raise StateError('Provider error entry limit reached.')
+        self.errors[key] = record
+
+    def clear_error(self, key):
+        if not valid_key(key):
+            raise StateError('Invalid state service key.')
+        self.errors.pop(key, None)
+
     def save(self):
         temporary = None
         try:
@@ -106,7 +154,8 @@ class UpdateState:
                     raise StateError('Invalid state record.')
                 ipv4(record['ipv4'])
                 timestamp(record['accepted_at'])
-            payload = json.dumps({'version': 1, 'entries': self.entries}, sort_keys=True).encode('utf-8') + b'\n'
+            self.validate_errors(self.errors)
+            payload = json.dumps({'version': 2, 'entries': self.entries, 'errors': self.errors}, sort_keys=True).encode('utf-8') + b'\n'
             if len(payload) > self.max_bytes:
                 raise StateError('State file exceeds size limit.')
             with tempfile.NamedTemporaryFile(mode='wb', dir=self.path.parent, prefix='.uddns-state-', delete=False) as handle:

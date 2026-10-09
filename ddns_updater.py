@@ -12,7 +12,7 @@ import time
 
 from update_state import open_state, StateError
 
-from providers.ddns_provider import DDNSProvider
+from providers.ddns_provider import DDNSProvider, ProviderRetryError, ProviderStopError
 
 
 def load_provider_classes():
@@ -76,6 +76,14 @@ def service_state_key(section, provider_class, settings):
     return hashlib.sha256(payload.encode('utf-8')).hexdigest()
 
 
+def provider_error_key(provider_class, settings):
+    # Conservative No-IP provider-wide scope: switching section/account/agent
+    # must not bypass a persisted provider stop or outage cooldown.
+    scope = {} if provider_class.__name__ == 'NoIP' else {
+        field: settings.get(field, '') for field in ('username', 'password', 'user_agent')}
+    return service_state_key('provider-error-scope', provider_class, scope)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="DDNS Updater")
     parser.add_argument("--no-log", action="store_true", help="Disable file logging")
@@ -117,6 +125,10 @@ def main(argv=None):
         print(f"Configuration valid for {len(services)} service(s). No requests sent.")
         return 0
 
+    if args.state_file is None and any(cls.__name__ == 'NoIP' for _, cls, _ in services):
+        print("No-IP updates require --state-file and --refresh-seconds for persistent error controls.", file=sys.stderr)
+        return 2
+
     try:
         if args.state_file is not None:
             with open_state(args.state_file) as state:
@@ -139,6 +151,16 @@ def run_services(services, args, *, state=None):
             print("Cannot open error log; no updates attempted.", file=sys.stderr)
             return 1
 
+    def report_failure(message):
+        print(message, file=sys.stderr)
+        if handler is not None:
+            try:
+                record = logging.LogRecord("UDDNSUpdater", logging.ERROR, "", 0, message, (), None)
+                handler.stream.write(handler.format(record) + "\n")
+                handler.flush()
+            except Exception:
+                print("Cannot write error log.", file=sys.stderr)
+
     failed = False
     try:
         for index, (section, provider_class, settings) in enumerate(services, 1):
@@ -147,6 +169,12 @@ def run_services(services, args, *, state=None):
                 # Suppress these until provider contracts are repaired; emit only
                 # controlled CLI messages, including constructor failures.
                 key = service_state_key(section, provider_class, settings) if state is not None else None
+                error_key = provider_error_key(provider_class, settings) if state is not None else None
+                blocked = state.blocked(error_key, now=int(time.time())) if state is not None else None
+                if blocked:
+                    failed = True
+                    report_failure(f"Service {index}: provider {'requires intervention' if blocked == 'stop' else 'cooldown is active'}; no requests attempted.")
+                    continue
                 with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                     provider = provider_class(section, settings)
                     # Capture the discovered address before invoking an adapter.
@@ -161,25 +189,29 @@ def run_services(services, args, *, state=None):
                     if state is not None:
                         try:
                             state.record_accepted(key, address, accepted_at=int(time.time()))
+                            state.clear_error(error_key)
                             state.save()
                         except StateError:
                             raise StateError("Provider accepted the update but state persistence failed; remaining services were not attempted.") from None
                     print(f"Service {index}: provider accepted the update; DNS propagation is unverified.")
                 else:
                     print(f"Service {index}: adapter completed; provider success is not yet verified.")
+            except (ProviderStopError, ProviderRetryError) as error:
+                if state is not None:
+                    try:
+                        state.record_error(error_key, now=int(time.time()),
+                                           retry_seconds=error.retry_seconds if isinstance(error, ProviderRetryError) else None)
+                        state.save()
+                    except StateError:
+                        raise StateError("Cannot persist provider error controls; remaining services were not attempted.") from None
+                report_failure(f"Service {index}: provider {'cooldown recorded' if isinstance(error, ProviderRetryError) else 'requires intervention'}; remaining services were not attempted.")
+                return 1
             except StateError:
                 raise
             except Exception:
                 failed = True
                 message = f"Service {index}: update failed; provider details withheld."
-                print(message, file=sys.stderr)
-                if handler is not None:
-                    try:
-                        record = logging.LogRecord("UDDNSUpdater", logging.ERROR, "", 0, message, (), None)
-                        handler.stream.write(handler.format(record) + "\n")
-                        handler.flush()
-                    except Exception:
-                        print("Cannot write error log.", file=sys.stderr)
+                report_failure(message)
     finally:
         if handler is not None:
             try:

@@ -18,7 +18,7 @@ def test_round_trip_and_expiry(tmp_path):
         assert not store.matches(KEY, IP, now=110, max_age=10)
         assert not store.matches(KEY, IP, now=99, max_age=10)
         assert not store.matches(KEY, '192.0.2.2', now=100, max_age=10)
-    assert json.loads(path.read_text()) == {'version': 1, 'entries': {KEY: {'ipv4': IP, 'accepted_at': 100}}}
+    assert json.loads(path.read_text()) == {'version': 2, 'entries': {KEY: {'ipv4': IP, 'accepted_at': 100}}, 'errors': {}}
     if os.name == 'posix':
         assert path.stat().st_mode & 0o777 == 0o600
 
@@ -41,7 +41,7 @@ def test_concurrent_lock_preserves_owner(tmp_path):
     assert not path.with_suffix('.json.lock').exists()
 
 
-@pytest.mark.parametrize('content', ['secret', '{', '{}', '{"version":2,"entries":{}}',
+@pytest.mark.parametrize('content', ['secret', '{', '{}', '{"version":3,"entries":{}}',
     '{"version":true,"entries":{}}', '{"version":1,"version":1,"entries":{}}',
     '{"version":1,"entries":{"secret":{}}}',
     json.dumps({'version': 1, 'entries': {KEY: {'ipv4': '::1', 'accepted_at': 100}}}),
