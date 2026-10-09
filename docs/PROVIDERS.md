@@ -8,7 +8,7 @@ live updates or DNS propagation checks have been performed. No release is availa
 | Shared IPv4 discovery | HTTPS ipify IPv4 endpoint; strict IPv4 parsing; HTTP 200 required; redirects disabled; connect/read timeouts | Controlled live check |
 | NamecheapDDNS | Encoded parameters; same HTTP rules; XML structure, zero error count, Done=true, matching IP, no error entries; rejects malformed/duplicate required fields and DOCTYPE | Controlled live response/propagation validation |
 | DuckDNS | Encoded domains/token/IP; same HTTP rules; exact OK response without verbose mode | Controlled live acceptance/propagation validation |
-| NoIP | HTTPS Basic authentication; encoded hostname/IP; client-identifying User-Agent; good/nochg plus matching IPv4 for each hostname | Approved client identification, change detection, persistent error/cooldown controls, controlled live validation |
+| NoIP | HTTPS Basic authentication; encoded hostname/IP; client-identifying User-Agent; good/nochg plus matching IPv4 for each hostname | Approved client identification, transport backoff, controlled live validation (state required for CLI stop/cooldown controls) |
 | Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied | Persistent error/cooldown controls, controlled live validation |
 | ChangeIP | HTTPS Basic auth; encoded parameters; known plain-text success heading, matching IP when present | Provider response documentation/controlled live confirmation |
 | SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; exact good/nochg with matching IP when present | Full wiki access/controlled live confirmation |
@@ -67,10 +67,14 @@ and complete approval requirements before using it as a distributed client.
 
 No-IP specifies updates only when the IP changes and requires stopping after
 errors; 911/HTTP 500 requires at least 30 minutes before another attempt.
-See [response requirements](https://www.noip.com/integrate/response). This prototype
-makes no automatic retries, but currently has no persistent change cache, cooldown,
-or account-wide stop state. Multiple sections or later invocations can still make
-additional requests. Those are blockers for unattended use; do not schedule it.
+See [response requirements](https://www.noip.com/integrate/response). The CLI now
+requires persistent state options for normal No-IP updates. It records provider-wide
+stop controls and 30-minute 911/HTTP-500 cooldowns and checks them before discovery
+on later invocations. Section/account/configuration changes cannot bypass controls
+in the same state file. Unknown responses are conservative stops; direct adapters
+must handle typed errors themselves. See [state behavior and recovery](UPDATE_STATE.md).
+Transport backoff, approved identification, and live validation remain unfinished;
+unattended scheduling is not ready.
 
 Dynu uses [its documented HTTPS protocol](https://www.dynu.com/en-US/DynamicDNS/IP-Update-Protocol)
 with Basic authentication and the existing username/password/hostname keys.
@@ -215,7 +219,7 @@ not explicitly specified on the provider page. Rejection and unknown bodies fail
 
 EuroDNS says the service requires its nameservers and activated dynamic hosts,
 and does not support round-robin records. Repeated unchanged updates can return
-abuse. This implementation has no retry, but lacks persistent change detection
-or account-wide stop state, so repeated invocations or sections can still send
-unnecessary requests. Unattended scheduling remains blocked; no live DNS update
+abuse. Opt-in persistent change detection can avoid recently accepted unchanged updates.
+Account-wide stop/error state remains unfinished, so repeated failures or sections
+can still send requests. Unattended scheduling remains blocked; no live DNS update
 or propagation check has been performed.

@@ -8,6 +8,22 @@ class ProviderError(RuntimeError):
     """Credential-safe request or response failure."""
 
 
+class ProviderHTTPError(ProviderError):
+    def __init__(self, status):
+        super().__init__("Provider HTTP request was not accepted.")
+        self.status = status
+
+
+class ProviderStopError(ProviderError):
+    """Provider requires intervention before another request."""
+
+
+class ProviderRetryError(ProviderError):
+    def __init__(self, retry_seconds):
+        super().__init__("Provider requires a retry cooldown.")
+        self.retry_seconds = retry_seconds
+
+
 class DDNSProvider:
     required_fields = ()
     request_timeout = (5, 15)
@@ -43,7 +59,7 @@ class DDNSProvider:
             else:
                 response = requests.get(url, **options)
             if response.status_code not in accepted_status:
-                raise ProviderError("Provider HTTP request was not accepted.")
+                raise ProviderHTTPError(response.status_code)
             text = response.text
             if len(text) > self.max_response_chars:
                 raise ProviderError("Provider response exceeds parsing limit.")
