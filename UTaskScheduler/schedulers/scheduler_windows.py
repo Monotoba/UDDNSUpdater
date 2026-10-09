@@ -1,56 +1,74 @@
-import os
+"""Windows task XML previews; native registration remains unavailable."""
+from datetime import date
+from pathlib import PureWindowsPath
+import re
 import subprocess
-import tempfile
 import xml.etree.ElementTree as ET
 
+NAMESPACE = 'http://schemas.microsoft.com/windows/2004/02/mit/task'
+
+
+class WindowsPreviewError(ValueError):
+    """Controlled task definition or installation error."""
+
+
+def xml_safe(value):
+    return (isinstance(value, str)
+            and not any(ord(c) < 32 or 0xD800 <= ord(c) <= 0xDFFF
+                        or ord(c) in (0xFFFE, 0xFFFF) for c in value))
+
+
 class WindowsTaskScheduler:
-    def __init__(self, schedule_args, command, task_name="MyTask", task_description="Scheduled Task"):
+    def __init__(self, schedule_args, command, task_name='MyTask', task_description='Scheduled Task'):
         self.schedule_args = schedule_args
         self.command = command
         self.task_name = task_name
         self.task_description = task_description
 
-    def schedule(self):
-        # Create an XML task definition for Windows Task Scheduler
-        task_xml = self.create_task_xml()
+    def schedule(self, *, dry_run=False, start_date=None):
+        if dry_run:
+            return self.create_task_xml(start_date=start_date)
+        raise WindowsPreviewError('Native task installation is unavailable; use a preview.')
 
-        # Generate a temporary XML file for the task definition
-        temp_dir = tempfile.gettempdir()
-        task_file_path = os.path.join(temp_dir, f"{self.task_name}_task.xml")
-
-        with open(task_file_path, "w") as task_file:
-            task_file.write(task_xml)
-
-        # Use schtasks to create the scheduled task
+    def create_task_xml(self, *, start_date=None, intervals=None):
+        if not isinstance(start_date, str) or not re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', start_date):
+            raise WindowsPreviewError('Windows preview requires a start date in YYYY-MM-DD format.')
         try:
-            task_command = f"schtasks /CREATE /XML {task_file_path} /TN {self.task_name}"
-            subprocess.run(task_command, shell=True, check=True)
-            print(f"Task '{self.task_name}' scheduled successfully.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error: {e}")
-        finally:
-            # Clean up the temporary XML file
-            os.remove(task_file_path)
-
-    def create_task_xml(self):
-        # Create an XML task definition for Windows Task Scheduler
-        task_name = self.task_name
-        task_description = self.task_description
-        task_command = self.command
-
-        root = ET.Element("Task")
-        root.set("version", "1.4")
-        registration_info = ET.SubElement(root, "RegistrationInfo")
-        ET.SubElement(registration_info, "Description").text = task_description
-        triggers = ET.SubElement(root, "Triggers")
-        daily_trigger = ET.SubElement(triggers, "CalendarTrigger")
-        daily_trigger.set("id", "0")
-        start_time = ET.SubElement(daily_trigger, "StartBoundary")
-        start_time.text = f"{self.schedule_args[0]:02d}:{self.schedule_args[1]:02d}:00"
-        recurrence = ET.SubElement(daily_trigger, "Repetition")
-        ET.SubElement(recurrence, "Interval").text = "PT1H"  # Hourly recurrence
-        actions = ET.SubElement(root, "Actions")
-        exec_action = ET.SubElement(actions, "Exec")
-        ET.SubElement(exec_action, "Command").text = task_command
-
-        return ET.tostring(root, encoding="utf-16", method="xml").decode()
+            date.fromisoformat(start_date)
+        except ValueError:
+            raise WindowsPreviewError('Invalid Windows start date.') from None
+        if (not xml_safe(self.task_name) or not self.task_name.strip()
+                or len(self.task_name) > 200 or any(c in self.task_name for c in '\\/:*?"<>|')
+                or not xml_safe(self.task_description)):
+            raise WindowsPreviewError('Invalid task name or description.')
+        if (not isinstance(self.command, (list, tuple)) or not self.command
+                or any(not xml_safe(arg) or '%' in arg for arg in self.command)
+                or not PureWindowsPath(self.command[0]).is_absolute()
+                or PureWindowsPath(self.command[0]).suffix.lower() != '.exe'
+                or '"' in self.command[0]):
+            raise WindowsPreviewError('Windows preview requires an absolute .exe and XML-safe arguments without percent characters.')
+        times = [self.schedule_args] if intervals is None else intervals
+        if not isinstance(times, (list, tuple)) or not 1 <= len(times) <= 48:
+            raise WindowsPreviewError('Windows preview requires 1 to 48 daily triggers.')
+        for time in times:
+            if (not isinstance(time, (list, tuple)) or len(time) != 2
+                    or any(type(v) is not int for v in time)
+                    or not 0 <= time[0] < 24 or not 0 <= time[1] < 60):
+                raise WindowsPreviewError('Invalid Windows daily trigger time.')
+        root = ET.Element('Task', {'xmlns': NAMESPACE, 'version': '1.2'})
+        registration = ET.SubElement(root, 'RegistrationInfo')
+        ET.SubElement(registration, 'Description').text = self.task_description
+        triggers = ET.SubElement(root, 'Triggers')
+        for index, (hour, minute) in enumerate(times):
+            trigger = ET.SubElement(triggers, 'CalendarTrigger', {'id': f'trigger{index}'})
+            ET.SubElement(trigger, 'StartBoundary').text = f'{start_date}T{hour:02d}:{minute:02d}:00'
+            ET.SubElement(trigger, 'Enabled').text = 'true'
+            daily = ET.SubElement(trigger, 'ScheduleByDay')
+            ET.SubElement(daily, 'DaysInterval').text = '1'
+        actions = ET.SubElement(root, 'Actions')
+        action = ET.SubElement(actions, 'Exec')
+        ET.SubElement(action, 'Command').text = self.command[0]
+        if len(self.command) > 1:
+            ET.SubElement(action, 'Arguments').text = subprocess.list2cmdline(self.command[1:])
+        ET.indent(root)
+        return ET.tostring(root, encoding='utf-8', xml_declaration=True).decode('utf-8') + '\n'
