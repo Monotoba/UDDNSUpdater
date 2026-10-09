@@ -1,7 +1,7 @@
 # Accepted-update state foundation
 
 `update_state.py` provides a local accepted-update state store. The DDNS CLI
-now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap/DuckDNS conservative stops
+now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap/DuckDNS/FreeDNS/Afraid conservative stops
 are implemented; other providers remain unfinished; this is not readiness for unattended operation.
 
 ```python
@@ -446,3 +446,32 @@ Transport/discovery backoff and live interoperability remain unverified. Direct
 adapter callers must manage state themselves. Multiple subnames remain supported
 in the existing comma-separated subdomain setting; accepted state covers that
 configured list as a whole.
+
+## FreeDNS/Afraid shared conservative stops
+
+Normal CLI updates for both adapter names require `--state-file` and
+`--refresh-seconds`; dry-run remains offline without state. Existing updated and
+unchanged response checks are preserved. HTTP rejection or an unconfirmed body
+persists a shared provider-wide stop and aborts remaining updates in that run.
+Later runs check it before discovery. Switching between FreeDNS and Afraid, or
+changing keys, hostnames, or sections, cannot bypass it. All FreeDNS/Afraid services
+in the state file are covered. This conservative client policy does not establish
+that an underlying error affects all records. No undocumented retry interval is
+inferred. Linked updates may affect additional account records; confirm account
+settings before use. No live response or propagation checks were performed.
+
+Investigate the cause before clearing the stop through either adapter name.
+Preserve accepted entries:
+
+```python
+from update_state import open_state
+from ddns_updater import provider_error_key
+from providers.provider_freedns import FreeDNS
+
+with open_state('/absolute/path/to/state.json') as state:
+    state.clear_error(provider_error_key(FreeDNS, {}))
+    state.save()
+```
+
+Transport/discovery backoff remains unfinished. Direct adapter callers must manage
+persistent controls themselves.

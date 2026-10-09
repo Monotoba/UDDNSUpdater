@@ -83,3 +83,7 @@ unchanged. Transport backoff and controlled live validation remain unfinished.
 DuckDNS now requires persistent CLI state and saves conservative provider-wide
 stops on HTTP rejection, KO, or unconfirmed bodies. Exact non-verbose OK acceptance
 is unchanged. Transport backoff and controlled live validation remain unfinished.
+
+FreeDNS/Afraid now require persistent CLI state and share conservative provider-wide
+stops on HTTP rejection or unconfirmed bodies. Success parsing is unchanged;
+transport backoff, linked-update scope confirmation, and live validation remain.

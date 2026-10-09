@@ -16,7 +16,7 @@ live updates or DNS propagation checks have been performed. No release is availa
 | YDNS | Trailing-slash HTTPS endpoint; Basic auth; exact good; legacy aliases; persistent conservative stops | Transport backoff, live validation; optional record_id selection not implemented |
 | GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance | Controlled live validation; PAT/v3 migration; named multi-value A sets are replaced |
 | GoogleDomains | Disabled before network access; retained discoverable class and migration error | Service unavailable for migrated domains |
-| Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks | Controlled live response confirmation; account linked-update scope; v2 not implemented |
+| Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks; shared persistent stops | Transport backoff; controlled live response confirmation; account linked-update scope; v2 not implemented |
 | CloudNS | Documented IPv4 DynamicURL endpoint; encoded per-record q key and ip; shared HTTP protections; exact OK response | Controlled live acceptance/propagation validation; optional JSON/failover parameters not implemented |
 | DNSMax | Disabled before network access; retained class with migration errors | Provider closed January 27, 2026 |
 | EntryDNS | Documented per-record HTTPS GET; encoded token path and explicit ip; shared HTTP protections; exact OK policy | Provider response specification/controlled live confirmation; token-to-hostname association not verified |
