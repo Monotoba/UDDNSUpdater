@@ -70,3 +70,8 @@ ChangeIP now persists provider-wide conservative stops and requires state option
 Discontinued changeip.com DDNS targets are rejected before requests; unrelated
 domains/sets are not globally disabled. Full response/retry evidence and controlled
 live validation remain outstanding. Other providers and transport backoff remain unfinished.
+
+EuroDynDNS now requires persistent CLI state and saves conservative provider-wide
+stops for HTTP rejection or unconfirmed responses. Success syntax is unchanged;
+no undocumented retry interval is inferred. Transport backoff and live validation
+remain unfinished.

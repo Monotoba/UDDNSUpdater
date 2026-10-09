@@ -1,7 +1,7 @@
 # Accepted-update state foundation
 
 `update_state.py` provides a local accepted-update state store. The DDNS CLI
-now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP conservative stops
+now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS conservative stops
 are implemented; other providers remain unfinished; this is not readiness for unattended operation.
 
 ```python
@@ -363,3 +363,29 @@ other provider controls and unattended scheduling are not ready. Tests cover
 retired suffixes, unrelated names/sets, all-service validation, HTTP/body failures,
 restart blocking, success/change detection, manual clearing, interrupted saves,
 and sanitized logs with mocked HTTP and no live DNS updates.
+
+## EuroDynDNS conservative stops
+
+Normal CLI updates require `--state-file` and `--refresh-seconds`; dry-run stays
+offline and does not require state. Success parsing remains single good/nochg,
+with a matching IPv4 when supplied. Rejected HTTP responses and unconfirmed bodies
+(including abuse and dnserr) persist a provider-wide stop and abort remaining updates
+in that run. Later runs check the stop before IP discovery. Configuration, hostname,
+or credential changes do not bypass it. This conservative client policy covers all
+EuroDynDNS services sharing the state file; it does not imply account-wide provider
+errors. The official documentation specifies no retry interval, so none is invented.
+
+Investigate the cause before explicitly clearing the stop. Retain accepted entries:
+
+```python
+from update_state import open_state
+from ddns_updater import provider_error_key
+from providers.provider_eurodyndns import EuroDynDNS
+
+with open_state('/absolute/path/to/state.json') as state:
+    state.clear_error(provider_error_key(EuroDynDNS, {}))
+    state.save()
+```
+
+Transport/discovery backoff and live interoperability remain unverified. Direct
+adapter callers must manage persistent controls themselves.
