@@ -35,3 +35,6 @@ installation remains blocked. Windows XML previews are also implemented; native 
 
 Windows preview: explicit start date, maximum 48 daily triggers, and offline
 XML/argument validation. Next: reconcile the legacy Task-section parser.
+
+Task-section daily planning now preserves JSON argument lists and rejects
+unsupported dates/calendar restrictions. Next: persistent DDNS change/error controls.

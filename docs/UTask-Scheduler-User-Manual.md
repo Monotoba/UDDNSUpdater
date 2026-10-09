@@ -1,3 +1,8 @@
+> **Current Task-section behavior:** Daily JSON-action planning is implemented.
+> Use `python -m UTaskScheduler.scheduler --config-file tasks.ini --dry-run`.
+> The installation and broad calendar claims below are historical design goals;
+> see [SCHEDULER.md](SCHEDULER.md) for supported fields and explicit errors.
+
 > **Design draft:** This document describes planned or incomplete behavior.
 > Use the [README](../README.md) and [repair roadmap](../ROADMAP.md) for current status.
 > For the implemented planning-only path, see [SCHEDULER.md](SCHEDULER.md).
