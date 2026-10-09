@@ -7,7 +7,7 @@ live updates or DNS propagation checks have been performed. No release is availa
 | --- | --- | --- |
 | Shared IPv4 discovery | HTTPS ipify IPv4 endpoint; strict IPv4 parsing; HTTP 200 required; redirects disabled; connect/read timeouts | Controlled live check |
 | NamecheapDDNS | Encoded parameters; same HTTP rules; XML structure, zero error count, Done=true, matching IP, no error entries; rejects malformed/duplicate required fields and DOCTYPE; persistent conservative stops | Transport backoff; controlled live response/propagation validation |
-| DuckDNS | Encoded domains/token/IP; same HTTP rules; exact OK response without verbose mode | Controlled live acceptance/propagation validation |
+| DuckDNS | Encoded domains/token/IP; same HTTP rules; exact OK response without verbose mode; persistent conservative stops | Transport backoff; controlled live acceptance/propagation validation |
 | NoIP | HTTPS Basic authentication; encoded hostname/IP; client-identifying User-Agent; good/nochg plus matching IPv4 for each hostname | Approved client identification, transport backoff, controlled live validation (state required for CLI stop/cooldown controls) |
 | Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied; persistent stop/retry controls | Transport backoff, controlled live validation (state required for CLI controls) |
 | ChangeIP | HTTPS Basic auth; encoded parameters; known plain-text success heading, matching IP when present | Provider response documentation/controlled live confirmation |

@@ -188,4 +188,4 @@ def test_real_cli_reports_acceptance_or_failure(monkeypatch, tmp_path, capsys, a
         assert "provider accepted" in output.out
         assert "propagation is unverified" in output.out
     else:
-        assert ("requires intervention" if cls is NamecheapDDNS else "update failed") in output.err
+        assert "requires intervention" in output.err
