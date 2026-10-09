@@ -76,3 +76,7 @@ macOS scheduler definitions can now be inspected with `--preview-launchd`; see
 
 Windows scheduler XML can now be inspected with `--preview-windows --start-date YYYY-MM-DD`;
 see [the scheduler guide](docs/SCHEDULER.md). Native registration remains unavailable.
+
+Legacy TaskN configurations now support validated daily planning with
+`python -m UTaskScheduler.scheduler --config-file tasks.ini --dry-run`.
+See [the scheduler guide](docs/SCHEDULER.md); installation remains unavailable.

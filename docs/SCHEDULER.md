@@ -24,9 +24,9 @@ product: `Hour=*/6` and `Minute=*/15` produce 16 daily trigger times. These are
 local calendar times, not elapsed-time intervals or one-time dates. Native time
 zone/daylight-saving behavior remains unvalidated.
 
-Do not put DDNS service sections in this file. The older `[Task1]` action/date
-format and `UTaskScheduler/scheduler.py` task installer remain unfinished. The
-legacy manual is a design draft, not an operating guide.
+Do not put DDNS service sections in this file. The separate `[Task1]` format now supports daily planning through
+`UTaskScheduler/scheduler.py`, as described below. Dates/calendar restrictions
+and installation remain unavailable. The legacy manual is a design draft.
 
 ## Dry run
 
@@ -71,8 +71,9 @@ command arguments.
 
 1. Linux, macOS, and Windows definition previews are implemented with offline
    tests. Native service acceptance and behavior remain to be validated.
-2. Reconcile the older Task-section parser, names, paths, and unsupported date/
-   calendar features with the unified API; add complete upfront validation.
+2. The Task-section parser now validates JSON actions and daily schedules through
+   the unified API. Multi-task native previews/installation and restricted
+   calendar/date features remain unavailable.
 3. Add persistent DDNS change detection and provider error/cooldown controls.
 4. Validate native user-task installation/removal in controlled environments
    before enabling it. Document partial installation, permissions, duplicate
@@ -193,3 +194,47 @@ raise WindowsPreviewError. Existing constructor name/description parameters are
 retained; the name is validated but registration naming remains external to XML.
 Tests inspect the XML and run a harmless real Windows process argv round trip
 in Windows CI. No task is installed or executed through Task Scheduler.
+
+## Task-section daily planning
+
+Use `python -m UTaskScheduler.scheduler --config-file tasks.ini --dry-run`.
+The direct `UTaskScheduler/scheduler.py` entry point also works outside the repo
+with absolute script/configuration paths. This is a separate format from SCHEDULE
+and DDNS provider configurations; they cannot be mixed.
+
+```ini
+[Task1]
+name = Daily example
+action = ["python", "-c", "print('Hello World')"]
+hours = */6
+minutes = */15
+days = *
+weeks = *
+months = *
+years = *
+```
+
+Section names must be Task followed by a positive decimal integer. Actions are
+strict JSON lists of strings, preserving spaces, backslashes, empty arguments,
+and percent characters without interpolation. JSON Windows paths require doubled
+backslashes. Plain command strings and Python list literals are rejected rather
+than guessed; no shell splitting or command execution occurs. Names default to
+the section name and must be nonempty and unique ignoring case. Names are planning
+labels only, not validated native file paths or registration identifiers.
+
+Hours/minutes use the same validated *, */N, or integer fields as the unified
+planner. Legacy defaults remain hours=* and minutes=*/10 (144 daily triggers).
+Days/weeks/months/years must be omitted or *; date must be omitted or empty.
+Unknown fields, DEFAULT values, mixed formats, duplicate sections/names, missing
+files, malformed JSON, and unsupported dates/calendar restrictions fail explicitly.
+All tasks are validated before output; dry run reports counts without printing
+names or actions. It validates daily planning only, not backend path/trigger limits.
+For example Windows XML previews support at most 48 triggers while planning may
+represent more. Use absolute executable/resource paths for eventual native jobs.
+
+`parse_config(path)` returns the validated legacy task dictionaries.
+`plan_tasks(path)` returns a list of name/triggers dictionaries using the unified
+`schedule_task(..., dry_run=True)` API. Neither executes actions nor installs jobs.
+Omitting --dry-run returns exit 1 for a valid configuration; invalid configurations
+return 2; successful planning returns 0. Multi-task preview output and native
+installation remain unavailable. `UTaskScheduler/sample.ini` is a planning example.
