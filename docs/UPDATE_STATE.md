@@ -1,7 +1,7 @@
 # Accepted-update state foundation
 
 `update_state.py` provides a local accepted-update state store. The DDNS CLI
-now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS conservative stops
+now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap conservative stops
 are implemented; other providers remain unfinished; this is not readiness for unattended operation.
 
 ```python
@@ -389,3 +389,31 @@ with open_state('/absolute/path/to/state.json') as state:
 
 Transport/discovery backoff and live interoperability remain unverified. Direct
 adapter callers must manage persistent controls themselves.
+
+## Namecheap conservative stops
+
+Normal NamecheapDDNS CLI updates require `--state-file` and `--refresh-seconds`;
+dry-run remains offline without state. The existing XML success checks are unchanged.
+HTTP rejection, malformed XML, DOCTYPE, error entries, duplicate required fields,
+or other unconfirmed responses persist a provider-wide stop and abort remaining
+updates in that run. Later runs check the stop before discovery. Changing domains,
+credentials, hostnames, or section names cannot bypass the stop. All Namecheap
+services sharing a state file are covered; this is a conservative client policy,
+not a claim that the underlying error affects every domain. No automatic retry
+interval is inferred from the provider's update guide.
+
+Investigate the cause, then explicitly clear only this stop while retaining accepted
+entries:
+
+```python
+from update_state import open_state
+from ddns_updater import provider_error_key
+from providers.provider_namecheap import NamecheapDDNS
+
+with open_state('/absolute/path/to/state.json') as state:
+    state.clear_error(provider_error_key(NamecheapDDNS, {}))
+    state.save()
+```
+
+Transport/discovery backoff and live interoperability remain unverified. Direct
+adapter callers must manage state themselves.
