@@ -82,6 +82,6 @@ Legacy TaskN configurations now support validated daily planning with
 See [the scheduler guide](docs/SCHEDULER.md); installation remains unavailable.
 
 Opt-in [persistent change detection](docs/UPDATE_STATE.md) is implemented via
-`--state-file /absolute/path/to/state.json --refresh-seconds N`. No-IP stop/cooldown persistence is implemented and requires these options for
+`--state-file /absolute/path/to/state.json --refresh-seconds N`. No-IP and Dynu stop/cooldown persistence is implemented and requires these options for
 normal updates. Other provider controls remain unfinished; unattended operation
 is not ready.

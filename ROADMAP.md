@@ -50,3 +50,8 @@ provider error/cooldown controls are the next step.
 No-IP now persists provider-wide stop controls and 30-minute 911/HTTP-500
 cooldowns, checked before discovery. State v1 migrates on save to v2. Other
 providers, transport backoff, and controlled live validation remain unfinished.
+
+Dynu now persists provider-wide stop controls and ten-minute retry controls for
+911/servererror/dnserr (the latter two use a conservative client delay). HTTP
+rejections require review. No-IP and Dynu both require state options for normal
+CLI updates; other providers and transport backoff remain unfinished.
