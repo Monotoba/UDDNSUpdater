@@ -50,11 +50,26 @@ class UTaskScheduler:
             raise SchedulerError(str(error)) from None
         return 'SHELL=/bin/sh\n' + '\n'.join(lines) + '\n'
 
+    def preview_launchd(self, command):
+        """Render one user-agent plist with all daily triggers, without writes."""
+        tasks = self.plan(command)
+        if tasks[0]['platform'] != 'Darwin':
+            raise SchedulerError('Launchd preview is available only for macOS schedules.')
+        if __package__:
+            from .schedulers.scheduler_macos import MacTaskScheduler, LaunchdPreviewError
+        else:
+            from schedulers.scheduler_macos import MacTaskScheduler, LaunchdPreviewError
+        try:
+            return MacTaskScheduler([tasks[0]['hour'], tasks[0]['minute']], command=tasks[0]['action']).render_plist(
+                intervals=[[task['hour'], task['minute']] for task in tasks])
+        except LaunchdPreviewError as error:
+            raise SchedulerError(str(error)) from None
+
     def schedule(self, command, *, dry_run=False):
         tasks = self.plan(command)
         if dry_run:
             return tasks
-        # The native backends remain incompatible and have unvalidated commands.
+        # Definition previews do not establish safe native installation.
         raise SchedulerUnavailableError("Native task installation is unavailable; use --dry-run.")
 
     def schedule_task(self, command, hour, minute, *, dry_run=False):
@@ -105,6 +120,7 @@ def main(argv=None):
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true", help="Validate only; no native task installation")
     mode.add_argument("--preview-cron", action="store_true", help="Print Linux user-crontab definition without installation")
+    mode.add_argument("--preview-launchd", action="store_true", help="Print macOS user-agent plist without installation")
     parser.add_argument("command", nargs=argparse.REMAINDER, help="Argument list after --")
     args = parser.parse_args(argv)
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
@@ -112,6 +128,8 @@ def main(argv=None):
         scheduler = UTaskScheduler(args.config_file)
         if args.preview_cron:
             preview = scheduler.preview_cron(command)
+        elif args.preview_launchd:
+            preview = scheduler.preview_launchd(command)
         else:
             tasks = scheduler.schedule(command, dry_run=args.dry_run)
     except SchedulerUnavailableError as error:
@@ -120,7 +138,7 @@ def main(argv=None):
     except SchedulerError as error:
         print(str(error), file=sys.stderr)
         return 2
-    if args.preview_cron:
+    if args.preview_cron or args.preview_launchd:
         print(preview, end="")
     else:
         print(f"Validated {len(tasks)} daily trigger(s). No tasks installed.")

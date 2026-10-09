@@ -29,3 +29,6 @@
    validation. Release only the scope supported by evidence.
 
 CI must never change DNS or install real system tasks. PyPI publication is on hold.
+
+Scheduler progress: Linux cron and macOS launchd previews are implemented and
+installation remains blocked. Windows definition repair is next.
