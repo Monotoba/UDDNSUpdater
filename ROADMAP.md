@@ -19,9 +19,8 @@
    for several services; persistent change/error controls are also unfinished.
 4. **Scheduler, partial:** unified daily hour/minute validation and planning-only
    dry run are implemented, with argument boundaries preserved and no native writes.
-   Linux user-crontab generation and preview are now implemented; installation
-   remains blocked. Repair launchd/Windows definitions next, reconcile the legacy
-   Task-section format, and add persistent DDNS
+   Linux, macOS, and Windows definition previews and legacy Task-section daily
+   planning are implemented; installation remains blocked. Add persistent DDNS
    change/error controls before controlled native integration. See
    [scheduler status](docs/SCHEDULER.md).
 5. **Documentation/release:** replace draft manuals with tested examples, add
@@ -38,3 +37,8 @@ XML/argument validation. Next: reconcile the legacy Task-section parser.
 
 Task-section daily planning now preserves JSON argument lists and rejects
 unsupported dates/calendar restrictions. Next: persistent DDNS change/error controls.
+
+Persistent-state foundation: versioned accepted IPv4/timestamp records, bounded
+validation, exclusive locks, and atomic writes are implemented offline. CLI
+identity/skip integration and provider cooldowns remain unfinished; see
+[update state](docs/UPDATE_STATE.md).
