@@ -6,6 +6,11 @@ from pathlib import Path
 import contextlib
 import io
 import sys
+import hashlib
+import json
+import time
+
+from update_state import open_state, StateError
 
 from providers.ddns_provider import DDNSProvider
 
@@ -61,12 +66,41 @@ def load_services(config_path, provider_classes):
     return services
 
 
+def service_state_key(section, provider_class, settings):
+    # Include all normalized settings: credential/account/record changes must
+    # invalidate a previous acceptance, not inherit another service's cache.
+    identity = {'version': 1, 'section': section,
+                'provider': provider_class.__module__ + '.' + provider_class.__qualname__,
+                'settings': settings}
+    payload = json.dumps(identity, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
+    return hashlib.sha256(payload.encode('utf-8')).hexdigest()
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="DDNS Updater")
     parser.add_argument("--no-log", action="store_true", help="Disable file logging")
     parser.add_argument("--config-file", default="config.ini", help="Configuration file (default: config.ini)")
     parser.add_argument("--dry-run", action="store_true", help="Validate configuration only; no network or file writes")
+    parser.add_argument("--state-file", help="Opt-in accepted-update state file (absolute path)")
+    parser.add_argument("--refresh-seconds", help="Maximum accepted-state age; required with --state-file")
     args = parser.parse_args(argv)
+    if (args.state_file is None) != (args.refresh_seconds is None):
+        print("--state-file and --refresh-seconds must be provided together.", file=sys.stderr)
+        return 2
+    if args.state_file is not None:
+        value = args.refresh_seconds
+        if (not value.isascii() or not value.isdigit() or len(value) > 10 or int(value) <= 0):
+            print("Refresh seconds must be a positive integer of at most ten digits.", file=sys.stderr)
+            return 2
+        args.refresh_seconds = int(value)
+        try:
+            state_path = Path(args.state_file)
+            if (not state_path.is_absolute() or state_path.resolve() in
+                    {Path(args.config_file).resolve(), Path("ddns_update.log").resolve()}):
+                raise ValueError
+        except (OSError, ValueError, RuntimeError):
+            print("State file must be an absolute path separate from configuration and log files.", file=sys.stderr)
+            return 2
 
     try:
         provider_classes = load_provider_classes()
@@ -83,6 +117,17 @@ def main(argv=None):
         print(f"Configuration valid for {len(services)} service(s). No requests sent.")
         return 0
 
+    try:
+        if args.state_file is not None:
+            with open_state(args.state_file) as state:
+                return run_services(services, args, state=state)
+        return run_services(services, args)
+    except StateError as error:
+        print(str(error), file=sys.stderr)
+        return 1
+
+
+def run_services(services, args, *, state=None):
     # A dedicated handler avoids changing the caller's root logger or retaining
     # handles between invocations. Open it before any DNS-related request.
     handler = None
@@ -101,13 +146,29 @@ def main(argv=None):
                 # Legacy adapters print raw provider bodies and exception URLs.
                 # Suppress these until provider contracts are repaired; emit only
                 # controlled CLI messages, including constructor failures.
+                key = service_state_key(section, provider_class, settings) if state is not None else None
                 with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                     provider = provider_class(section, settings)
-                    result = provider.update_ddns()
+                    # Capture the discovered address before invoking an adapter.
+                    address = DDNSProvider.validate_ipv4(provider.external_ip) if state is not None else None
+                    unchanged = state is not None and state.matches(
+                        key, address, now=int(time.time()), max_age=args.refresh_seconds)
+                    result = None if unchanged else provider.update_ddns()
+                if unchanged:
+                    print(f"Service {index}: unchanged IPv4 with recent provider acceptance; update skipped.")
+                    continue
                 if result is True:
+                    if state is not None:
+                        try:
+                            state.record_accepted(key, address, accepted_at=int(time.time()))
+                            state.save()
+                        except StateError:
+                            raise StateError("Provider accepted the update but state persistence failed; remaining services were not attempted.") from None
                     print(f"Service {index}: provider accepted the update; DNS propagation is unverified.")
                 else:
                     print(f"Service {index}: adapter completed; provider success is not yet verified.")
+            except StateError:
+                raise
             except Exception:
                 failed = True
                 message = f"Service {index}: update failed; provider details withheld."
@@ -123,6 +184,8 @@ def main(argv=None):
         if handler is not None:
             try:
                 handler.close()
+            except StateError:
+                raise
             except Exception:
                 failed = True
                 print("Cannot close error log.", file=sys.stderr)

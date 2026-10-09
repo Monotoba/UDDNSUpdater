@@ -40,5 +40,9 @@ unsupported dates/calendar restrictions. Next: persistent DDNS change/error cont
 
 Persistent-state foundation: versioned accepted IPv4/timestamp records, bounded
 validation, exclusive locks, and atomic writes are implemented offline. CLI
-identity/skip integration and provider cooldowns remain unfinished; see
+identity/skip integration is implemented; provider cooldowns remain unfinished; see
 [update state](docs/UPDATE_STATE.md).
+
+Opt-in state integration skips recently accepted unchanged IPv4 addresses and
+saves only explicit adapter success. Refresh policy is caller-supplied. Persistent
+provider error/cooldown controls are the next step.

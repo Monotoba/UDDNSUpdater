@@ -1,8 +1,8 @@
 # Accepted-update state foundation
 
-`update_state.py` provides an offline local state store. It is not connected to
-the DDNS CLI yet: no updates are skipped and provider cooldowns are not enforced.
-This foundation must not be taken as readiness for unattended operation.
+`update_state.py` provides a local accepted-update state store. The DDNS CLI
+now supports opt-in change detection, described below. Provider-specific
+cooldowns remain unfinished; this is not readiness for unattended operation.
 
 ```python
 from update_state import open_state
@@ -17,8 +17,7 @@ with open_state("/absolute/path/to/update-state.json") as state:
 ```
 
 The caller supplies a stable lowercase 64-digit hex service identity, an IPv4
-address, and integer Unix timestamps. Service identity derivation and CLI options
-are not implemented. Keys must distinguish provider/record/account/configuration
+address, and integer Unix timestamps. The CLI derives service identities as described below. Keys must distinguish provider/record/account/configuration
 changes before integration; reusing a key across services could skip a required
 update. Do not use a credential as the key. Records contain only IPv4 and accepted_at;
 no hostname, username, token, response body, or configuration is persisted by this
@@ -40,8 +39,7 @@ active before manually removing it. There is no automatic stale-lock recovery.
 Missing state starts empty. Corrupt, oversized, unknown-version, duplicate-key,
 invalid-address, or invalid-timestamp files raise StateError without echoing data
 or paths. They are not silently overwritten. The JSON format has a version and at
-most 1000 entries; file size is bounded at 256 KiB. State errors are not yet mapped
-to CLI exit behavior because integration is pending.
+most 1000 entries; file size is bounded at 256 KiB. State failures return CLI exit 1; corrupt state prevents network requests.
 
 Saving uses a temporary file in the same directory, flush/fsync, and atomic
 replacement. A failed replacement retains the previous file and attempts temporary
@@ -53,6 +51,62 @@ who can modify the parent directory or race filesystem operations. Use a trusted
 local directory, not a shared/untrusted directory or network filesystem.
 
 Tests cover round trips, expiry/future timestamps, competing locks, invalid data,
-size/entry limits, and failed writes. Next: define service identity and opt-in CLI
-integration, save only explicit provider success, then add provider-specific
-error/cooldown state and controlled concurrency/recovery behavior.
+size/entry limits, and failed writes. CLI integration saves only explicit provider success. Next: provider-specific
+error/cooldown state and controlled recovery behavior.
+
+## Opt-in CLI change detection
+
+```sh
+python ddns_updater.py --config-file /absolute/path/to/services.ini --state-file /absolute/path/to/update-state.json --refresh-seconds 86400
+```
+
+The 86400-second value is illustrative, not a verified refresh policy for every
+provider. Choose an interval that meets your provider's current requirements;
+no automatic interval is selected. --state-file and --refresh-seconds must be
+provided together. The path must be absolute, its parent must already exist, and
+it must differ from the configuration and current error-log paths. An integer
+refresh interval must be positive and at most ten decimal digits. Without these
+options the previous update behavior is retained.
+
+The CLI validates all service configurations, then acquires/loads state before
+opening its log or constructing providers. It holds the lock until all services
+finish, including network requests. A competing process fails instead of updating
+without state. --dry-run validates options/configuration without opening or checking
+the state file, acquiring a lock, creating logs, or constructing providers; it
+therefore cannot establish that the state path is usable or its contents are valid.
+
+Each provider constructor still discovers the current IPv4 address. A matching
+address with an acceptance younger than refresh-seconds skips only the provider
+update request, and leaves its original timestamp unchanged. Changed addresses,
+expired/future records, and missing records attempt an update. Discovery requests
+are not skipped or shared between services. This feature does not query DNS or
+prove propagation, and an externally changed DNS record may go unnoticed until
+refresh expiry or the next address/configuration change.
+
+Only the literal adapter result True records acceptance. False, None, other
+results, and exceptions never record success. An existing record is retained on
+provider failure. Accepted updates save immediately, so an unrelated later failure
+does not lose earlier recorded success. Provider exceptions retain the existing
+sanitized error/continue-to-next-service behavior. If saving an accepted update
+fails, exit 1 explicitly reports that the provider accepted it but persistence
+failed, and remaining services are not attempted. The already sent update cannot
+be rolled back; retry may resend it. Unexpected adapter results retain the existing
+unverified-completion message and exit behavior.
+
+Service identity is a SHA-256 digest of versioned canonical JSON containing the
+section name, provider module/class, and all normalized settings, including
+credentials. Credential/account/record/section changes therefore invalidate the
+cache. Sorting makes setting order irrelevant. Renaming a section can cause a
+fresh update; old identities remain until state is managed explicitly and the
+1000-entry limit can eventually be reached. The file contains no plaintext
+credentials, but the unsalted digest is not encryption and may permit offline
+credential guessing if the rest of the configuration is known. Protect the file
+and its directory as sensitive local data. No identity is printed in CLI output.
+
+Provider cooldowns, fatal-error persistence, automatic stale-record pruning,
+shared IP discovery, and native scheduler installation remain unavailable. In
+particular, a failure can be retried immediately on the next invocation; do not
+run unattended until provider-specific error controls are implemented and tested.
+Tests use fake adapters and blocked HTTP, including changed/unchanged IP, expiry,
+identity changes, unverified/failing results, corrupt/locked state, and save failures.
+No live DNS update was used to validate this integration.
