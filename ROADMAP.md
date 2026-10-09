@@ -65,3 +65,8 @@ YDNS now persists provider-wide conservative stops for rejected HTTP responses
 and unconfirmed bodies, checked before discovery. Normal CLI updates require
 state options. Retry timing is not specified by the reviewed API-v1 guide; no
 automatic cooldown is inferred. Other providers and transport backoff remain unfinished.
+
+ChangeIP now persists provider-wide conservative stops and requires state options.
+Discontinued changeip.com DDNS targets are rejected before requests; unrelated
+domains/sets are not globally disabled. Full response/retry evidence and controlled
+live validation remain outstanding. Other providers and transport backoff remain unfinished.

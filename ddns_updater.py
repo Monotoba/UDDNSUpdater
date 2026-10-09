@@ -62,6 +62,12 @@ def load_services(config_path, provider_classes):
             value = settings.get(key, "")
             if not value.strip() or value.strip().upper().startswith("YOUR_"):
                 raise ConfigurationError(f"Service {index}: missing or placeholder {key}.")
+        validate = getattr(provider_class, "validate_settings", None)
+        if validate is not None:
+            try:
+                validate(settings)
+            except Exception:
+                raise ConfigurationError(f"Service {index}: invalid or discontinued provider settings.") from None
         services.append((section, provider_class, settings))
     return services
 
