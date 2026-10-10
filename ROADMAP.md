@@ -38,3 +38,7 @@ Native execution on all platforms and provider integration gaps remain for 1.0.
 YDNS optional API-v1 record_id selection is implemented and validated before
 requests. Acceptance identities include selection changes. Live account/record
 association remains a validation gate; this does not establish live interoperability.
+
+GoDaddy explicit PAT/v3 single-record replacement is implemented on main, retaining
+v1 compatibility and shared persistent stops. Live token scope/access and record
+association remain gates; the published alpha is unchanged.

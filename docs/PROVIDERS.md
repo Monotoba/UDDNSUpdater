@@ -14,7 +14,7 @@ live updates or DNS propagation checks have been performed. See [alpha scope](AL
 | SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; good/nochg checks; persistent conservative stops | Full wiki access, retry policy, live transport validation, controlled live confirmation |
 | SpDYN | Reuses SecurePoint and shares its persistent stop identity | Same wiki/retry-policy/live-validation limitations as SecurePoint |
 | YDNS | Trailing-slash HTTPS endpoint; Basic auth; exact good; legacy aliases; optional record_id; persistent conservative stops | Live transport validation, live validation; record_id/account association needs live confirmation |
-| GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance; persistent conservative stops | Live transport validation; controlled live validation; PAT/v3 migration; named multi-value A sets are replaced |
+| GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance; persistent conservative stops | Live transport validation; controlled live validation; live PAT/v3 access/record association; v1 named multi-value A sets are replaced |
 | GoogleDomains | Disabled before network access; retained discoverable class and migration error | Service unavailable for migrated domains |
 | Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks; shared persistent stops | Live transport validation; controlled live response confirmation; account linked-update scope; v2 not implemented |
 | CloudNS | Documented IPv4 DynamicURL endpoint; encoded per-record q key and ip; shared HTTP protections; exact OK response; persistent conservative stops | Live transport validation; controlled live acceptance/propagation validation; optional JSON/failover parameters not implemented |
@@ -278,3 +278,13 @@ are accepted (client input bound only). Validation occurs before discovery, incl
 invalid values in later service sections. Record selection changes accepted-update
 identity; the provider-wide stop scope is unchanged. Account/record association and
 live response/propagation remain unverified.
+
+### GoDaddy v3 on main
+
+Explicit api_version=v3 uses a PAT and stable record_id to replace one A record,
+with all required name/type/data/TTL fields. HTTP 200 JSON must match the configured
+record and requested values; duplicate JSON fields are rejected. V1 compatibility
+and shared error identity are retained. See [configuration](CLI.md) and the official
+[replacement reference](https://developer.godaddy.com/en/docs/references/rest/domains/v3/replace-dns-record)
+and [DNS guide](https://developer.godaddy.com/en/docs/api-users/domains/manage/dns).
+Offline tests do not establish account access, record association, or propagation.

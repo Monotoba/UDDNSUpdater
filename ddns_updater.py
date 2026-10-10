@@ -58,7 +58,8 @@ def load_services(config_path, provider_classes):
             settings = normalize(settings)
         if provider_class.__name__ == "YDNS" and settings.get("hostname", "").strip().isdigit():
             raise ConfigurationError(f"Service {index}: YDNS requires a hostname, not a numeric domain ID.")
-        for key in provider_class.required_fields:
+        required = getattr(provider_class, 'required_fields_for', lambda _: provider_class.required_fields)(settings)
+        for key in required:
             value = settings.get(key, "")
             if not value.strip() or value.strip().upper().startswith("YOUR_"):
                 raise ConfigurationError(f"Service {index}: missing or placeholder {key}.")

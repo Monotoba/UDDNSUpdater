@@ -34,7 +34,8 @@ class DDNSProvider:
     def __init__(self, name, config):
         self.name = name
         self.config = config
-        for key in self.required_fields:
+        required = getattr(self, 'required_fields_for', lambda _: self.required_fields)(config)
+        for key in required:
             if not config.get(key, "").strip():
                 raise ProviderError("Missing required provider configuration.")
         self.external_ip = self.get_external_ip()
