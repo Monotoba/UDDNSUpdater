@@ -1,4 +1,5 @@
 """Install a built wheel outside the checkout and verify offline entry points."""
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -13,7 +14,7 @@ def check(wheel):
     with zipfile.ZipFile(wheel) as archive:
         names = archive.namelist()
         for name in ('ddns_updater.py', 'update_state.py', 'providers/provider_duckddns.py',
-                     'UTaskScheduler/utask_scheduler.py'):
+                     'UTaskScheduler/utask_scheduler.py', 'UTaskScheduler/execution_probe.py'):
             assert name in names, name
         assert any(name.endswith('/licenses/LICENSE') for name in names)
         assert not any(name.startswith('tests/') for name in names)
@@ -45,6 +46,17 @@ def check(wheel):
         run([str(python), '-c', code])
         assert not (root/'ddns_update.log').exists()
         assert not list(root.glob('*.json'))
+        probe_directory = root/'probe-output'
+        probe_directory.mkdir()
+        run([str(python), '-m', 'UTaskScheduler.execution_probe',
+             '--output-directory', str(probe_directory), '--', 'two words', '100%', '--flag'])
+        records = list(probe_directory.glob('uddns-probe-*.json'))
+        assert len(records) == 1
+        record = json.loads(records[0].read_text(encoding='utf-8'))
+        assert record['arguments'] == ['two words', '100%', '--flag']
+        assert Path(record['executable']).resolve() == python.resolve()
+        assert record['working_directory'] == str(root)
+
     print('Installed-wheel offline checks passed.')
 
 

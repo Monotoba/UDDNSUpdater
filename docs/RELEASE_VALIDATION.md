@@ -34,6 +34,35 @@ for this stage.
    tasks are unchanged. Retain failure evidence and inspect partial state before
    retrying installation; do not overwrite a colliding task.
 
+### Packaged execution probe
+
+Main includes `python -m UTaskScheduler.execution_probe`. Create a private,
+user-owned output directory, then first run this manually using the absolute
+Python executable that will run the task:
+
+```sh
+/absolute/path/to/python -m UTaskScheduler.execution_probe --output-directory /absolute/path/to/probe-output -- "two words" "quote\"here" "plain-punctuation_+"
+```
+
+Pass the same executable/module/arguments to the scheduler's explicit install
+mode as its command after `--`. Use platform-appropriate command-line quoting;
+the example above uses POSIX shell quoting. Windows previews reject percent
+characters in arguments, so choose supported punctuation for Windows checks.
+
+Each execution writes a new `uddns-probe-*.json` with UTC timestamp, process ID,
+platform/Python version, executable, working directory, and exact test arguments.
+The probe makes no network requests and does not install or remove tasks. It
+records no environment variables. Arguments are recorded verbatim: use harmless
+strings only. A record proves the probe ran, not that a scheduled trigger caused
+it; correlate timestamps with the native scheduler's execution history and the
+chosen trigger. Remove manual-run records before observing the scheduled run.
+
+The output directory must already exist, be absolute, and not itself be a
+symlink. Parent directories must be trusted. Files are exclusive and mode 0600
+on POSIX; Windows confidentiality depends on the directory's ACLs. Write failures
+return exit code 1 with a fixed message. Inspect output manually for missing or
+partial records after interrupted runs. Remove the task before deleting evidence.
+
 ## Provider checks after scheduler checks
 
 Use disposable A records with explicit authorization for DNS writes. Establish
