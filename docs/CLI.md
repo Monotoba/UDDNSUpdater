@@ -155,7 +155,8 @@ with an explicit IPv4. TLS certificate verification remains enabled.
 provider's documented HTTPS update endpoint with Basic authentication. Only
 exact good/nochg status, optionally followed by the requested IPv4, is accepted.
 Repeated nochg updates can trigger abuse; the CLI persists a stop after abuse
-and supports accepted-update change detection. See [persistent state](UPDATE_STATE.md). Native task installation remains blocked.
+and supports accepted-update change detection. See [persistent state](UPDATE_STATE.md). Explicit native task installation is available in 0.1.0a2; EuroDNS live
+provider validation remains outstanding.
 
 ## Required state options for normal updates
 
