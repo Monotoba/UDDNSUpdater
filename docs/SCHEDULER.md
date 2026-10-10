@@ -266,3 +266,37 @@ compare-and-swap, so concurrent editors can overwrite each other's changes.
 Installation is mocked in automated tests; real cron execution/environment and
 cross-platform native integration remain release gates for 1.0. macOS/Windows
 installation is still unavailable. No task is installed by tests or build checks.
+
+## Development toward 1.0: explicit macOS registration
+
+Main now supports `--install-launchd NAME` and `--remove-launchd NAME` for the
+current user's `gui/UID` launchd domain. An active GUI login session is required.
+The 0.1.0a1 release still has previews only; Windows installation remains unfinished.
+
+```sh
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --install-launchd ddns -- /absolute/path/to/python /absolute/path/to/ddns_updater.py --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600
+python -m UTaskScheduler.utask_scheduler --remove-launchd ddns
+```
+
+Choose the refresh interval for your provider. No native installation occurs
+unless you select this explicit mode. Each task has label
+org.monotoba.uddnsupdater.NAME and a plist beneath ~/Library/LaunchAgents.
+Only daily schedules are supported. Commands preserve argument boundaries and
+must start with an absolute executable. No shell interpolation is used.
+
+Installation rejects existing files and registered label collisions, creates the
+file exclusively with mode 0600, bootstraps it, and verifies registration.
+Remove explicitly before reinstalling. Removal checks a valid matching managed
+plist, boots out the label if registered, verifies absence, then deletes that
+file. Unknown registration statuses fail closed. Missing/foreign definitions or
+symlinks are rejected. Failed registration retains the definition for explicit
+recovery; errors after a write may leave partial native state and must be inspected.
+Launchctl commands have 15-second timeouts and raw diagnostics are withheld.
+
+Use a trusted home directory; this is not protection against another process
+that can modify it or race file/native operations. Avoid concurrent changes to
+the same label. Registered service identity is checked by label, not by execution
+history. Actual launchd execution, permissions, login/logout behavior, and missed
+triggers require macOS integration validation before 1.0. Automated tests mock
+launchctl and never register real tasks. No system daemon or elevated installation
+is supported.
