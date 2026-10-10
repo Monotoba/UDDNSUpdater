@@ -89,3 +89,37 @@ before 1.0. Keep unresolved response contracts and live failures visible. Passin
 CI does not close these gaps. Run the full suite and distribution checks on the
 final candidate, reconcile README/provider/scheduler instructions, and record
 known limits before creating the tag. PyPI publication remains a separate task.
+
+## Optional live DuckDNS workflow
+
+`Live DuckDNS integration` is a manual workflow on main. Routine push/PR tests
+stay offline. Before using it, regenerate the token exposed during the initial
+manual experiment and store the new value as repository Actions secret
+`DUCKDNS_TEST_TOKEN` (Settings → Secrets and variables → Actions). Do not commit
+it or enter it as a workflow input. The repository variable
+`DUCKDNS_TEST_SUBDOMAIN` defaults to `monotoba-uddns-test`; set it to the bare
+subdomain of a dedicated existing test A record if you use another hostname.
+
+Open Actions → Live DuckDNS integration → Run workflow, selecting main. Each run
+requires an authoritative baseline before writing, invokes the real updater with
+protected temporary configuration/state, verifies the updated authoritative A
+record, and verifies repeat suppression. It then restores and authoritatively
+checks the baseline, including after ordinary errors or catchable interruption.
+A single concurrency group prevents overlapping workflow runs; running jobs are
+not canceled when another run is submitted. No scheduled trigger is enabled.
+Use a manual run as a pre-release check until reliability is established.
+
+The first update temporarily points the record at the GitHub runner's public IP.
+Do not use this record for a real service or edit it concurrently from another
+client. The token can control other records in the same account, so a dedicated
+DuckDNS test account is preferable. The baseline IPv4 appears in logs to support
+manual restoration; credentials and raw provider responses do not.
+
+DNS checks poll up to twelve times, with five seconds between attempts and at
+most two authoritative servers, five seconds per transport query. Server address
+discovery uses bounded resolver calls and is cached for the run. The job has a
+15-minute timeout. Forced termination, runner loss, a second interruption during
+cleanup, or network/provider failure can still prevent restoration. If a run
+fails or is canceled, inspect the record and restore the logged baseline through
+the DuckDNS dashboard before rerunning. This workflow proves DuckDNS integration
+only; it does not close other provider or native scheduling validation gates.
