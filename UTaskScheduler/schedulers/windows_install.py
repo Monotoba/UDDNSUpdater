@@ -9,34 +9,55 @@ import xml.etree.ElementTree as ET
 from .scheduler_windows import NAMESPACE, WindowsPreviewError, WindowsTaskScheduler
 
 MARKER = 'UDDNSUpdater managed daily task v1'
+IDENTITY_SCRIPT = r'''
+function Test-CurrentUser([string]$identity, [string]$sid) {
+    try {
+        if ($identity -match '^S-[0-9-]+$') {
+            $resolved = [System.Security.Principal.SecurityIdentifier]::new($identity).Value
+        } else {
+            $account = [System.Security.Principal.NTAccount]::new($identity)
+            $resolved = $account.Translate([System.Security.Principal.SecurityIdentifier]).Value
+        }
+        return $resolved -eq $sid
+    } catch { return $false }
+}
+'''
 SCRIPT = r'''
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+''' + IDENTITY_SCRIPT + r'''
+$phase = 'input'
 try {
     $p = [Console]::In.ReadToEnd() | ConvertFrom-Json
     $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
     $tasks = @(Get-ScheduledTask -TaskPath '\' -ErrorAction Stop)
     $task = @($tasks | Where-Object { $_.TaskName -eq $p.name })
     if ($p.operation -eq 'install') {
+        $phase = 'collision'
         if ($task.Count -ne 0) { throw 'collision' }
         [xml]$definition = $p.xml
         $ns = New-Object System.Xml.XmlNamespaceManager($definition.NameTable)
         $ns.AddNamespace('t', 'http://schemas.microsoft.com/windows/2004/02/mit/task')
         $definition.SelectSingleNode('//t:UserId', $ns).InnerText = $sid
+        $phase = 'registration'
         Register-ScheduledTask -TaskName $p.name -TaskPath '\' -Xml $definition.OuterXml -ErrorAction Stop | Out-Null
         $created = Get-ScheduledTask -TaskName $p.name -TaskPath '\' -ErrorAction Stop
-        if ($created.Description -ne $p.marker -or $created.Principal.UserId -ne $sid) { throw 'verification' }
+        $phase = 'identity'
+        if ($created.Description -ne $p.marker -or -not (Test-CurrentUser $created.Principal.UserId $sid)) { throw 'verification' }
+        $phase = 'export'
         $export = Export-ScheduledTask -TaskName $p.name -TaskPath '\' -ErrorAction Stop
         @{ok=$true; xml=$export} | ConvertTo-Json -Compress
     } elseif ($p.operation -eq 'remove') {
-        if ($task.Count -ne 1 -or $task[0].Description -ne $p.marker -or $task[0].Principal.UserId -ne $sid) { throw 'ownership' }
+        $phase = 'ownership'
+        if ($task.Count -ne 1 -or $task[0].Description -ne $p.marker -or -not (Test-CurrentUser $task[0].Principal.UserId $sid)) { throw 'ownership' }
+        $phase = 'removal'
         Unregister-ScheduledTask -TaskName $p.name -TaskPath '\' -Confirm:$false -ErrorAction Stop
         $remaining = @(Get-ScheduledTask -TaskPath '\' -ErrorAction Stop | Where-Object { $_.TaskName -eq $p.name })
         if ($remaining.Count -ne 0) { throw 'verification' }
         @{ok=$true} | ConvertTo-Json -Compress
     } else { throw 'operation' }
 } catch {
-    [Console]::Error.WriteLine('Native task operation failed; inspect Task Scheduler before retrying.')
+    [Console]::Error.WriteLine('UDDNS native failure phase: ' + $phase)
     exit 1
 }
 '''
@@ -59,7 +80,14 @@ def invoke(operation, name, definition=None):
                                 input=json.dumps({'operation':operation, 'name':name,
                                                   'xml':definition, 'marker':MARKER}),
                                 capture_output=True, text=True, encoding='utf-8', timeout=30)
-        if result.returncode or len(result.stdout) > 524288:
+        if result.returncode:
+            phase = re.fullmatch(r'UDDNS native failure phase: (input|collision|registration|identity|export|ownership|removal)',
+                                 result.stderr.strip())
+            if phase:
+                raise WindowsPreviewError('Native task operation failed during ' + phase.group(1)
+                                          + '; inspect Task Scheduler before retrying.')
+            raise ValueError
+        if len(result.stdout) > 524288:
             raise ValueError
         response = json.loads(result.stdout.lstrip('\ufeff'))
         if not isinstance(response, dict) or response.get('ok') is not True:
