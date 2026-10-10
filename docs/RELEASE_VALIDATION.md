@@ -13,7 +13,9 @@ Never record credentials, tokens, or raw provider bodies in public evidence.
 | Linux systemd | Real Ubuntu 24.04 user-manager registration, scheduled Python 3.12 execution, literal argv, home working directory, unit/link removal and inventory preservation in [run 38027896157](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38027896157), main 637a58c, 2026-10-10 UTC | Other distributions and login environments; logout/linger, reboot, suspend and DST |
 | macOS launchd | GUI-domain registration, scheduled Python 3.12 execution, exact argv, removal and unrelated plist preservation on macOS 15 Intel in [run 38028091981](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38028091981), main 4828cc3, 2026-10-10 UTC | Other login environments, logout/sleep/DST behavior |
 | Windows tasks | Real current-user registration/export, native SID/run-level verification, scheduled Python 3.12 execution, exact argv, removal and unrelated task preservation in [run 38028091981](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38028091981), main 4828cc3, 2026-10-10 UTC | Other user/session environments, battery/idle defaults, sleep/DST behavior |
-| Providers | Fourteen active adapter classes, controlled request/response errors and persistent state | Provider-specific contract gaps in PROVIDERS.md; disposable-record acceptance and propagation |
+| DuckDNS | Live CLI acceptance, authoritative A verification, repeat suppression and verified restoration in [run 38022228218](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38022228218), main 5d8e6ea, 2026-10-10 UTC | Other account/environment combinations and live error recovery |
+| Other providers | Thirteen other active adapter classes, controlled request/response errors and persistent state; aliases share implementations | Provider-specific contract gaps in PROVIDERS.md; authorized disposable-record acceptance and propagation |
+| No-IP client identity | Printable-ASCII header validation and configurable identifier | Maintainer contact, provider-approved identifier/certification outcome; live record validation |
 | YDNS | Optional record_id selection | Account-to-record association and selected-record update |
 | GoDaddy | Classic v1 and PAT/v3 single-record update | PAT scopes, existing record identity, v3 response and propagation |
 | Distribution | Source/wheel builds, isolated installed-wheel offline checks in six CI jobs | Repeat on final candidate; verify documented commands against installed package |
@@ -82,6 +84,25 @@ requirements before that integration check.
 4. Exercise rejection/cooldown behavior with offline fixtures. Do not deliberately
    trigger provider abuse protections in live accounts. Restore disposable records
    if necessary and remove the test task/configuration after the check.
+
+## Remaining provider work, in order
+
+1. Resolve the Securepoint return-code/retry documentation access gap and obtain
+   authoritative response evidence for ChangeIP, EntryDNS and FreeDNS. Keep
+   conservative stops until the contracts are confirmed. Do not infer retry
+   intervals from other providers using similar status words.
+2. Resolve No-IP client identification with a real maintainer contact and the
+   provider; an override or passing fixture is not certification.
+3. Use authorized disposable records to validate the remaining providers. Check
+   YDNS record/account association, GoDaddy PAT scopes and record identity,
+   FreeDNS linked-update settings, and ChangeIP group membership before writes.
+   Record acceptance, authoritative A visibility, repeat suppression and cleanup.
+4. Rebuild and run the final candidate through offline CI and the existing manual
+   live workflows. Publish only the support scope backed by those results.
+
+DuckDNS is the only authorized live DNS test account currently configured.
+Additional provider accounts/records are required to close their live gates;
+HTTP fixtures and native scheduler successes cannot substitute for those checks.
 
 ## Release decision
 
