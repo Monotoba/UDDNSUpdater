@@ -29,7 +29,7 @@ def test_register_definition_and_remove(native):
     assert calls[0]['name'] == 'UDDNSUpdater-daily'
     windows.remove('daily')
     assert calls[1]['operation'] == 'remove'
-    assert '-Force' not in windows.SCRIPT and 'Principal.UserId -ne $sid' in windows.SCRIPT
+    assert '-Force' not in windows.SCRIPT and 'Test-CurrentUser $task[0].Principal.UserId $sid' in windows.SCRIPT
 
 @pytest.mark.parametrize('name', ['', '../x', 'a\nb', 'x'*65])
 def test_invalid_name_before_native(native, name):
@@ -85,4 +85,21 @@ def test_powershell_script_parses_without_native_registration():
     code = "$tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseInput([Console]::In.ReadToEnd(),[ref]$tokens,[ref]$errors) | Out-Null; if ($errors.Count) { exit 1 }"
     result = subprocess.run([executable,'-NoProfile','-NonInteractive','-Command',code],
                             input=windows.SCRIPT,capture_output=True,text=True,timeout=30)
+    assert result.returncode == 0
+
+
+@pytest.mark.skipif(__import__('sys').platform != 'win32', reason='Windows account resolution required')
+def test_native_account_name_and_sid_resolve_to_same_identity():
+    import os
+    from pathlib import PureWindowsPath
+    executable = str(PureWindowsPath(os.environ['SystemRoot'])/'System32'/'WindowsPowerShell'/'v1.0'/'powershell.exe')
+    code = windows.IDENTITY_SCRIPT + r'''
+$current = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+if (-not (Test-CurrentUser $current.User.Value $current.User.Value)) { exit 1 }
+if (-not (Test-CurrentUser $current.Name $current.User.Value)) { exit 2 }
+if (Test-CurrentUser 'S-1-5-18' $current.User.Value) { exit 3 }
+if (Test-CurrentUser 'uddns_nonexistent_account_89f92' $current.User.Value) { exit 4 }
+'''
+    result = subprocess.run([executable,'-NoProfile','-NonInteractive','-Command',code],
+                            capture_output=True,text=True,timeout=30)
     assert result.returncode == 0
