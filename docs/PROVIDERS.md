@@ -1,6 +1,6 @@
 # Provider repair status
 
-Reviewed on 2026-10-10. This describes main, not the published alpha. All active
+Reviewed on 2026-10-10. This describes the 0.1.0a2 alpha and main. All active
 adapters have offline mocked-HTTP tests. DuckDNS additionally passed a controlled
 live CLI update, authoritative DNS verification, repeat suppression, and verified
 restoration in [run 38022228218](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38022228218).

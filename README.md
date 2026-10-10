@@ -15,11 +15,11 @@ coverage. Main has live DuckDNS update/restoration evidence and native Linux cro
 and macOS launchd execution evidence, plus Linux systemd user-timer and Windows
 Task Scheduler execution. Other providers and user-specific unattended environments
 still require validation; see the checklist below.
-Version 0.1.0a1 is the initial experimental alpha. PyPI publication is on hold.
+Version 0.1.0a2 is an experimental alpha with explicit native scheduler installation. PyPI publication is on hold.
 
-## Evaluate the alpha candidate
+## Evaluate the alpha
 
-Version `0.1.0a1` is the initial alpha. See [GitHub releases](https://github.com/Monotoba/UDDNSUpdater/releases). PyPI publication is on hold. Install from this checkout with `python -m pip install .`, then run
+Version `0.1.0a2` remains an alpha. See [GitHub releases](https://github.com/Monotoba/UDDNSUpdater/releases). PyPI publication is on hold. Install from this checkout with `python -m pip install .`, then run
 `uddns-updater --config-file examples/evaluation.ini --dry-run` for an offline
 configuration check. See [alpha scope and installation](docs/ALPHA.md).
 
@@ -68,8 +68,8 @@ Windows previews. Main supports explicit named task installation/removal on
 all three platforms, with a choice of cron or systemd user timers on Linux.
 Use `--scheduler cron` or `--scheduler systemd` with `--preview NAME`,
 `--install NAME`, `--status NAME`, or `--remove NAME`. Existing cron-specific
-commands remain supported. Native evidence is tracked per platform. The published alpha
-has previews only. See [scheduler validation](docs/SCHEDULER.md), the
+commands remain supported. Native evidence is tracked per platform. Version 0.1.0a2
+includes these explicit installation modes; 0.1.0a1 had previews only. See [scheduler validation](docs/SCHEDULER.md), the
 [1.0 validation checklist](docs/RELEASE_VALIDATION.md), and
 [CONTRIBUTING.md](CONTRIBUTING.md).
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "uddnsupdater"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "Experimental IPv4 dynamic DNS updater with persistent update controls"
 readme = "README.md"
 requires-python = ">=3.10"

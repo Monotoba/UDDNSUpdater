@@ -1,6 +1,6 @@
 # 1.0 release validation
 
-This checklist applies to main, not the published 0.1.0a1 alpha. An implemented
+This checklist applies to main and development beyond the 0.1.0a2 alpha. An implemented
 path is not a verified integration. Record candidate commit, date, platform,
 Python version, sanitized commands, outcomes, and cleanup for every live check.
 Never record credentials, tokens, or raw provider bodies in public evidence.
