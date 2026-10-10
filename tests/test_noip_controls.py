@@ -174,3 +174,32 @@ def test_error_entry_limit(tmp_path, monkeypatch):
         with pytest.raises(state.StateError):
             store.record_error('b' * 64, now=100)
         store.record_error('a' * 64, now=101, retry_seconds=1800)
+
+
+@pytest.mark.parametrize('setting', ['hostname=one.example,', 'user_agent='])
+@pytest.mark.parametrize('dry_run', [False, True])
+def test_invalid_settings_prevent_all_cli_side_effects(scenario, setting, dry_run, capsys):
+    config, path, args, calls, _ = scenario
+    text = config.read_text()
+    if setting.startswith('hostname='):
+        text = text.replace('hostname=one.example', setting)
+    else:
+        text += setting + '\n'
+    config.write_text(text)
+    assert app.main(args + (['--dry-run'] if dry_run else [])) == 2
+    assert calls == []
+    assert not path.exists()
+    assert not path.with_name(path.name + '.lock').exists()
+    assert SECRET not in capsys.readouterr().err
+
+
+def test_mutated_user_agent_prevents_update_request(scenario):
+    _, _, _, calls, _ = scenario
+    provider = NoIP('direct', {'username': 'user', 'password': SECRET,
+                             'hostname': 'one.example'})
+    calls.clear()
+    provider.config['user_agent'] = 'bad\r\nInjected: ' + SECRET
+    from providers.ddns_provider import ProviderError
+    with pytest.raises(ProviderError, match='Invalid No-IP User-Agent'):
+        provider.update_ddns()
+    assert calls == []
