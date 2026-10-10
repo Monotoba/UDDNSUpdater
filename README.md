@@ -15,6 +15,13 @@ coverage. Live provider requests, credentials, DNS propagation, and native
 scheduling have not been validated.
 There is no release or PyPI package.
 
+## Evaluate the alpha candidate
+
+Version `0.1.0a1` is an alpha candidate; no GitHub release or PyPI publication has
+been made yet. Install from this checkout with `python -m pip install .`, then run
+`uddns-updater --config-file examples/evaluation.ini --dry-run` for an offline
+configuration check. See [alpha scope and installation](docs/ALPHA.md).
+
 ## Start with development checks
 
 Use Python 3.10+ in an activated virtual environment:
@@ -57,8 +64,7 @@ See [provider repair status](docs/PROVIDERS.md).
 
 The unified scheduler now validates a separate daily schedule and offers a
 side-effect-free dry run, plus a Linux user-crontab preview. Native installation
-is explicitly blocked while backend
-commands and DDNS change/error controls remain unfinished. The older Task-section
+is explicitly blocked while native integration remains unvalidated. The older Task-section
 installer is also incomplete. See [scheduler validation](docs/SCHEDULER.md),
 [ROADMAP.md](ROADMAP.md), and [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -83,5 +89,5 @@ See [the scheduler guide](docs/SCHEDULER.md); installation remains unavailable.
 
 Opt-in [persistent change detection](docs/UPDATE_STATE.md) is implemented via
 `--state-file /absolute/path/to/state.json --refresh-seconds N`. No-IP/Dynu stop/cooldown persistence and SecurePoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap/DuckDNS/FreeDNS/Afraid/CloudNS/EntryDNS/GoDaddy conservative stops
-are implemented; these providers require the state options for normal updates. Other provider controls remain unfinished; unattended operation
-is not ready.
+are implemented; these providers require the state options for normal updates. All active bundled CLI adapters require state options. Shared transport failures
+use a provider-scoped 30-minute cooldown. Unattended operation remains unvalidated.

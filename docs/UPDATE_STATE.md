@@ -1,8 +1,13 @@
+> Current alpha scope: all active bundled CLI providers require persistent state.
+> Provider rejection controls and shared transport cooldowns are implemented.
+> Earlier foundation notes describe implementation stages; the final shared
+> transport section and ALPHA.md define current behavior and limitations.
+
 # Accepted-update state foundation
 
 `update_state.py` provides a local accepted-update state store. The DDNS CLI
 now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap/DuckDNS/FreeDNS/Afraid/CloudNS/EntryDNS/GoDaddy conservative stops
-are implemented; other providers remain unfinished; this is not readiness for unattended operation.
+are implemented for all active bundled CLI providers; this is not readiness for unattended operation.
 
 ```python
 from update_state import open_state
@@ -387,7 +392,7 @@ with open_state('/absolute/path/to/state.json') as state:
     state.save()
 ```
 
-Transport/discovery backoff and live interoperability remain unverified. Direct
+Shared provider-scoped transport/discovery backoff is implemented below; live interoperability remains unverified. Direct
 adapter callers must manage persistent controls themselves.
 
 ## Namecheap conservative stops
@@ -415,7 +420,7 @@ with open_state('/absolute/path/to/state.json') as state:
     state.save()
 ```
 
-Transport/discovery backoff and live interoperability remain unverified. Direct
+Shared provider-scoped transport/discovery backoff is implemented below; live interoperability remains unverified. Direct
 adapter callers must manage state themselves.
 
 ## DuckDNS conservative stops
@@ -442,7 +447,7 @@ with open_state('/absolute/path/to/state.json') as state:
     state.save()
 ```
 
-Transport/discovery backoff and live interoperability remain unverified. Direct
+Shared provider-scoped transport/discovery backoff is implemented below; live interoperability remains unverified. Direct
 adapter callers must manage state themselves. Multiple subnames remain supported
 in the existing comma-separated subdomain setting; accepted state covers that
 configured list as a whole.
@@ -473,7 +478,7 @@ with open_state('/absolute/path/to/state.json') as state:
     state.save()
 ```
 
-Transport/discovery backoff remains unfinished. Direct adapter callers must manage
+Shared provider-scoped transport/discovery backoff is implemented as described below. Direct adapter callers must manage
 persistent controls themselves.
 
 ## CloudNS and EntryDNS conservative stops
