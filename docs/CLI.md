@@ -59,8 +59,8 @@ credential loading is not implemented.
 
 Without `--dry-run`, providers are constructed and run in section order. Adapter
 construction can itself discover the public IP. A raised exception produces a
-controlled error identifying only the service number, and later services are
-still attempted. This is not a transaction: earlier DNS changes are not rolled back.
+controlled error identifying only the service number. Persistent stop/cooldown
+errors abort remaining services; ordinary runtime failures continue to later services. This is not a transaction: earlier DNS changes are not rolled back.
 
 The default configuration is `config.ini` in the working directory. By default,
 errors go to `ddns_update.log` there; `--no-log` disables file logging. Configuration
@@ -149,6 +149,14 @@ with an explicit IPv4. TLS certificate verification remains enabled.
 `EuroDynDNS` retains `username`, `password`, and `hostname` and now uses the
 provider's documented HTTPS update endpoint with Basic authentication. Only
 exact good/nochg status, optionally followed by the requested IPv4, is accepted.
-The provider's abuse code is treated as a failure, with no retry. Repeated nochg
-updates can trigger abuse; persistent change detection and stop controls are
-not implemented. Do not install unattended tasks yet.
+Repeated nochg updates can trigger abuse; the CLI persists a stop after abuse
+and supports accepted-update change detection. See [persistent state](UPDATE_STATE.md). Native task installation remains blocked.
+
+## Required state options for normal updates
+
+Every active bundled provider requires both `--state-file /absolute/path/state.json`
+and `--refresh-seconds N` before normal requests. Missing options return code 2.
+The parent directory must exist and be controlled by the user; choose a refresh
+interval appropriate for the provider. There is no universally verified default.
+Dry-run needs neither option and does not inspect state usability. See
+[update controls and recovery](UPDATE_STATE.md) and [alpha limits](ALPHA.md).

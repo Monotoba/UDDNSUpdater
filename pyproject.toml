@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uddnsupdater"
+version = "0.1.0a1"
+description = "Experimental IPv4 dynamic DNS updater with persistent update controls"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-2-Clause"
+license-files = ["LICENSE"]
+authors = [{name = "Randal Morgan"}]
+dependencies = ["requests>=2.32,<3"]
+classifiers = ["Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Operating System :: OS Independent"]
+
+[project.urls]
+Repository = "https://github.com/Monotoba/UDDNSUpdater"
+Issues = "https://github.com/Monotoba/UDDNSUpdater/issues"
+
+[project.scripts]
+uddns-updater = "ddns_updater:main"
+
+[tool.setuptools]
+py-modules = ["ddns_updater", "update_state"]
+
+[tool.setuptools.packages.find]
+include = ["providers*", "UTaskScheduler*"]
+
+[tool.setuptools.package-data]
+UTaskScheduler = ["sample.ini"]
