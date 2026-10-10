@@ -50,8 +50,12 @@ def test_native_failure_sanitized(native, status):
 def test_export_mismatch_reported(native, old, new):
     _, control = native
     control['transform'] = lambda xml: xml.replace(old,new)
-    with pytest.raises(WindowsPreviewError):
+    with pytest.raises(WindowsPreviewError) as error:
         windows.install('daily',[r'C:\Python\python.exe','space argument'],[[0,0]],'2026-10-10')
+    field = {'LeastPrivilege': 'RunLevel', 'InteractiveToken': 'LogonType',
+             'space argument': 'Arguments', 'T00:00:00': 'StartBoundary'}[old]
+    assert 'failed for ' + field in str(error.value)
+    assert new not in str(error.value)
 
 def test_invalid_schedule_before_native(native):
     calls, _ = native
