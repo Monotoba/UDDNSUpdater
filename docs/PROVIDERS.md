@@ -211,8 +211,11 @@ Tokens are encoded as one path component; dot-segment tokens are rejected.
 Certificate verification remains enabled even though the provider's curl example
 uses the insecure -k option. The implementation does not send PUT or JSON.
 
-Public EntryDNS help does not specify response bodies. Our conservative exact
-OK policy is informed by the [Asuswrt-Merlin integration example](https://github.com/RMerl/asuswrt-merlin.ng/wiki/DDNS-Sample-Scripts),
+The REST guide does not specify response bodies. The official
+[Draytek guide](https://entrydns.net/help/draytek) specifies OK for a different
+router endpoint, `/routers/modify/TOKEN`, over HTTP. That is not a response
+contract for the HTTPS records endpoint used here. Our conservative exact
+OK policy for records is informed by the [Asuswrt-Merlin integration example](https://github.com/RMerl/asuswrt-merlin.ng/wiki/DDNS-Sample-Scripts),
 not a verified complete provider response contract. Unknown bodies fail. Controlled
 live confirmation or a provider response specification remains necessary.
 
@@ -231,8 +234,8 @@ abuse. Normal CLI updates now require persistent state options. Change detection
 avoids recently accepted unchanged updates. Rejected HTTP responses and unconfirmed
 bodies persist a provider-wide stop before subsequent discovery, including abuse
 and dnserr. The documentation gives no retry interval; automatic recovery is not
-inferred. Investigate and explicitly clear the stop as described in UPDATE_STATE.md. Unattended scheduling remains blocked; no live DNS update
-or propagation check has been performed.
+inferred. Investigate and explicitly clear the stop as described in UPDATE_STATE.md. Explicit scheduler installation is implemented on main, but native execution
+remains unvalidated; no live DNS update or propagation check has been performed.
 
 ### Securepoint/SpDYN error-control update
 

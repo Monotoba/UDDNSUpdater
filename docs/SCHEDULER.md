@@ -100,8 +100,9 @@ The output starts with `SHELL=/bin/sh` and contains one five-field daily entry
 per trigger, with a final newline. It is a user-crontab snippet, not a system
 crontab (which requires a username), and not a replacement for an existing full
 crontab. A SHELL setting affects subsequent entries when combined with an existing
-file. Existing-entry preservation, duplicate handling, environment integration,
-and native installation/removal are not implemented.
+file. The preview performs no existing-entry preservation or duplicate handling.
+Explicit install/remove modes on main are described below; real environment and
+execution validation remain outstanding.
 
 The [cron manual](https://man7.org/linux/man-pages/man5/crontab.5.html) specifies
 that percent characters are processed before the command reaches the shell.
@@ -264,14 +265,15 @@ timeout. Failures after a write require checking native state before retrying.
 Back up your crontab and avoid simultaneous edits: crontab exposes no atomic
 compare-and-swap, so concurrent editors can overwrite each other's changes.
 Installation is mocked in automated tests; real cron execution/environment and
-cross-platform native integration remain release gates for 1.0. macOS/Windows
-installation is still unavailable. No task is installed by tests or build checks.
+cross-platform native integration remain release gates for 1.0. Explicit macOS/Windows installation is also implemented on main as described
+below. No task is installed by tests or build checks.
 
 ## Development toward 1.0: explicit macOS registration
 
 Main now supports `--install-launchd NAME` and `--remove-launchd NAME` for the
 current user's `gui/UID` launchd domain. An active GUI login session is required.
-The 0.1.0a1 release still has previews only; Windows installation remains unfinished.
+The 0.1.0a1 release still has previews only. Main also implements Windows
+registration, described in the following section.
 
 ```sh
 python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --install-launchd ddns -- /absolute/path/to/python /absolute/path/to/ddns_updater.py --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600

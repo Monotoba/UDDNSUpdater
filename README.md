@@ -61,11 +61,12 @@ responses. Response checks are offline-tested; several provider contracts still
 need live confirmation. No adapter verifies DNS propagation.
 See [provider repair status](docs/PROVIDERS.md).
 
-The unified scheduler now validates a separate daily schedule and offers a
-side-effect-free dry run, plus a Linux user-crontab preview. Native installation
-is explicitly blocked while native integration remains unvalidated. The older Task-section
-installer is also incomplete. See [scheduler validation](docs/SCHEDULER.md),
-[ROADMAP.md](ROADMAP.md), and [CONTRIBUTING.md](CONTRIBUTING.md).
+The unified scheduler validates daily schedules and provides Linux, macOS, and
+Windows previews. Main also supports explicit named task installation/removal on
+all three platforms; native execution remains unvalidated. The published alpha
+has previews only. See [scheduler validation](docs/SCHEDULER.md), the
+[1.0 validation checklist](docs/RELEASE_VALIDATION.md), and
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Contribute
 
