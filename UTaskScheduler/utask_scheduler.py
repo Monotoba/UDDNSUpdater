@@ -80,6 +80,21 @@ class UTaskScheduler:
         except WindowsPreviewError as error:
             raise SchedulerError(str(error)) from None
 
+    def preview_systemd(self, command, name):
+        """Return named user service/timer definitions without files or subprocesses."""
+        tasks = self.plan(command)
+        if tasks[0]['platform'] != 'Linux':
+            raise SchedulerError('Systemd preview is available only for Linux schedules.')
+        if __package__:
+            from .schedulers.scheduler_systemd import render_units, SystemdError
+        else:
+            from schedulers.scheduler_systemd import render_units, SystemdError
+        try:
+            return render_units(name, tasks[0]['action'],
+                                [[task['hour'], task['minute']] for task in tasks])
+        except SystemdError as error:
+            raise SchedulerError(str(error)) from None
+
     def schedule(self, command, *, dry_run=False):
         tasks = self.plan(command)
         if dry_run:
@@ -132,7 +147,17 @@ class UTaskScheduler:
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Validate a daily native task schedule")
     parser.add_argument("--config-file", default="config.ini")
+    parser.add_argument('--scheduler', choices=['cron', 'systemd'], help='Explicit Linux backend for generic modes')
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--preview', metavar='NAME', help='Preview a named Linux task using --scheduler')
+    mode.add_argument('--install', metavar='NAME', help='Install a named Linux task using --scheduler')
+    mode.add_argument('--remove', metavar='NAME', help='Remove a named Linux task using --scheduler')
+    mode.add_argument('--status', metavar='NAME', help='Inspect a named Linux task using --scheduler')
+    mode.add_argument('--preview-systemd', metavar='NAME', help='Print named systemd user service/timer definitions')
+    mode.add_argument('--install-systemd', metavar='NAME', help='Explicitly enable/start a named systemd user timer')
+    mode.add_argument('--remove-systemd', metavar='NAME', help='Stop/remove managed systemd user units')
+    mode.add_argument('--status-systemd', metavar='NAME', help='Inspect managed systemd user unit state')
+    mode.add_argument('--status-cron', metavar='NAME', help='Inspect named user-crontab block presence')
     mode.add_argument("--install-windows", metavar="NAME", help="Explicitly register a current-user Windows task")
     mode.add_argument("--remove-windows", metavar="NAME", help="Remove a managed current-user Windows task")
     mode.add_argument("--install-launchd", metavar="NAME", help="Explicitly register a named macOS user agent")
@@ -146,11 +171,76 @@ def main(argv=None):
     parser.add_argument("--start-date", help="Windows preview start date (YYYY-MM-DD)")
     parser.add_argument("command", nargs=argparse.REMAINDER, help="Argument list after --")
     args = parser.parse_args(argv)
+    generic = next((operation for operation in ('preview', 'install', 'remove', 'status')
+                    if getattr(args, operation) is not None), None)
+    if bool(generic) != bool(args.scheduler):
+        parser.error('--scheduler requires --preview, --install, --remove, or --status, and vice versa')
+    if generic:
+        value = getattr(args, generic)
+        if args.scheduler == 'cron' and generic == 'preview':
+            if __package__:
+                from .schedulers.cron_install import markers
+                from .schedulers.scheduler_unix import CronPreviewError
+            else:
+                from schedulers.cron_install import markers
+                from schedulers.scheduler_unix import CronPreviewError
+            try:
+                markers(value)
+            except CronPreviewError as error:
+                parser.error(str(error))
+            args.preview_cron = True
+        else:
+            setattr(args, generic + '_' + args.scheduler, value)
     if args.start_date is not None and not (args.preview_windows or args.install_windows is not None):
         parser.error("--start-date requires --preview-windows or --install-windows")
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     try:
         scheduler = UTaskScheduler(args.config_file)
+        if any(getattr(args, operation + '_systemd') is not None
+               for operation in ('preview', 'install', 'remove', 'status')):
+            if sys.platform != 'linux':
+                raise SchedulerError('Systemd operations are available only on Linux.')
+            if (args.remove_systemd is not None or args.status_systemd is not None) and command:
+                raise SchedulerError('Systemd remove/status does not accept a command.')
+            if __package__:
+                from .schedulers.systemd_install import install, remove, status
+                from .schedulers.scheduler_systemd import SystemdError
+            else:
+                from schedulers.systemd_install import install, remove, status
+                from schedulers.scheduler_systemd import SystemdError
+            try:
+                if args.preview_systemd is not None:
+                    units = scheduler.preview_systemd(command, args.preview_systemd)
+                    for filename, text in units.items():
+                        print('# File: ' + filename + '\n' + text, end='')
+                elif args.install_systemd is not None:
+                    tasks = scheduler.plan(command)
+                    install(args.install_systemd, tasks[0]['action'],
+                            [[task['hour'], task['minute']] for task in tasks])
+                    print('Named systemd user timer activation verified.')
+                elif args.remove_systemd is not None:
+                    remove(args.remove_systemd)
+                    print('Named systemd user units removed and absence verified.')
+                else:
+                    import json
+                    print(json.dumps(status(args.status_systemd), sort_keys=True))
+            except SystemdError as error:
+                raise SchedulerError(str(error)) from None
+            return 0
+        if args.status_cron is not None:
+            if sys.platform != 'linux' or command:
+                raise SchedulerError('Cron status requires Linux and accepts no command.')
+            if __package__:
+                from .schedulers.cron_install import status
+                from .schedulers.scheduler_unix import CronPreviewError
+            else:
+                from schedulers.cron_install import status
+                from schedulers.scheduler_unix import CronPreviewError
+            try:
+                print('Named user-crontab block: ' + ('present' if status(args.status_cron) else 'absent'))
+            except CronPreviewError as error:
+                raise SchedulerError(str(error)) from None
+            return 0
         if args.install_windows is not None or args.remove_windows is not None:
             if sys.platform != 'win32':
                 raise SchedulerError('Native Windows operations are available only on Windows.')

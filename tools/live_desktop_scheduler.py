@@ -36,8 +36,8 @@ def exercise(inventory, key, install, observe, remove):
         print('Probe removed; unrelated task definitions preserved.', flush=True)
 
 
-def verify_record(record, executable, started):
-    if (record.get('schema_version') != 1 or record.get('arguments') != ARGUMENTS
+def verify_record(record, executable, started, arguments=ARGUMENTS):
+    if (record.get('schema_version') != 1 or record.get('arguments') != arguments
             or Path(record.get('executable', '')).resolve() != Path(executable).resolve()):
         raise NativeCheckError('Scheduled probe executable or arguments did not match.')
     stamp = datetime.fromisoformat(record['timestamp_utc'])
@@ -47,7 +47,7 @@ def verify_record(record, executable, started):
         raise NativeCheckError('Scheduled working directory is not absolute.')
 
 
-def observe(output, executable, started, *, clock=time.monotonic, sleep=time.sleep):
+def observe(output, executable, started, *, arguments=ARGUMENTS, clock=time.monotonic, sleep=time.sleep):
     deadline = clock() + 180
     while clock() < deadline:
         records = list(output.glob('uddns-probe-*.json'))
@@ -60,7 +60,7 @@ def observe(output, executable, started, *, clock=time.monotonic, sleep=time.sle
             except json.JSONDecodeError:
                 sleep(1)
                 continue
-            verify_record(record, executable, started)
+            verify_record(record, executable, started, arguments)
             print('Actual scheduled execution verified:', record['timestamp_utc'], flush=True)
             print('Scheduled working directory:', record['working_directory'], flush=True)
             return

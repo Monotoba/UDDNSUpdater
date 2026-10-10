@@ -4,13 +4,18 @@ The published [0.1.0a1 alpha](docs/ALPHA.md) provides offline-tested IPv4 provid
 updates, persistent acceptance/error state, daily scheduler previews, and source/
 wheel packaging. PyPI publication remains on hold.
 
-Main additionally implements explicit installation/removal for Linux user cron,
+Main additionally implements explicit installation/removal for Linux user cron and systemd timers,
 macOS user launchd, and Windows current-user interactive tasks. These paths have
 mocked native-command tests; Windows CI also checks PowerShell syntax. YDNS record
 selection and GoDaddy PAT/v3 single-record replacement are implemented. These
 changes do not alter the published alpha.
 
-The next work is validation rather than adding more scheduler backends:
+Linux cron and macOS launchd scheduled execution have passed disposable-runner
+checks. Windows live testing found a principal identity representation issue;
+the SID-resolution fix requires a live rerun. Systemd uses the same daily planner
+and has offline definition/lifecycle tests; native execution is a separate gate.
+
+The next work is validation:
 
 1. Resolve remaining provider response/retry evidence and No-IP identification
    requirements. Keep unverified responses fail-closed.

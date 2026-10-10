@@ -10,7 +10,8 @@ Never record credentials, tokens, or raw provider bodies in public evidence.
 | Area | Implemented and tested | Evidence still required |
 | --- | --- | --- |
 | Linux cron | Explicit named install/remove; real Ubuntu 24.04 daemon execution, exact argv and crontab restoration in [run 38025262434](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38025262434), main e0ccf29, 2026-10-10 UTC | Other distributions and user-specific environments |
-| macOS launchd | Explicit user-agent registration/removal, plist validation, mocked commands | GUI-domain registration, actual launchctl error behavior, scheduled execution, removal |
+| Linux systemd | Named user service/timer generation, install/status/remove, ownership and preservation fixtures, native unit-parser check | Actual user-manager registration, scheduled execution, literal argv and cleanup |
+| macOS launchd | GUI-domain registration, scheduled Python 3.12 probe execution and removal on macOS 15 Intel in [run 38027149593](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38027149593), main 6ec710d, 2026-10-10 UTC; unrelated plist preservation | Other login environments, logout/sleep/DST behavior |
 | Windows tasks | Explicit current-user registration/removal, ownership checks, mocked commands, PowerShell syntax in Windows CI | Real registration/export, interactive execution and environment, removal, unrelated-task preservation |
 | Providers | Fourteen active adapter classes, controlled request/response errors and persistent state | Provider-specific contract gaps in PROVIDERS.md; disposable-record acceptance and propagation |
 | YDNS | Optional record_id selection | Account-to-record association and selected-record update |
@@ -163,3 +164,21 @@ or failure of native inventory/removal can prevent cleanup; runners are disposab
 No DNS, credentials, or routine push/PR task registration are involved. Success
 proves only the tested hosted-runner session, not execution while logged out or
 all user environments.
+
+## Manual Linux systemd integration
+
+`Native Linux systemd integration` is a manual main-only Ubuntu 24.04 hosted-runner
+workflow. It starts the disposable runner's current-user manager and supplies that
+runner's runtime-directory/user-bus environment. Production installation never
+starts privileged services or enables linger. The installed CLI must register and
+activate the timer, report managed status, and run the probe at its chosen daily
+trigger. Exact argv includes spaces, quotes, backslashes, literal percent/dollar
+strings, a semicolon, an empty argument and a leading flag. WorkingDirectory must
+be the user's home. Removal must stop/disable both units, verify native absence,
+and preserve unrelated user-unit files and enablement links.
+
+No DNS updates or credentials are used. Ordinary errors trigger managed removal;
+hard termination or native failures may leave partial state on the disposable
+runner. Routine CI runs the native unit parser without installing tasks. Live
+success applies only to the tested user-manager session, not logout/linger,
+reboot, suspend, DST, or every distribution.

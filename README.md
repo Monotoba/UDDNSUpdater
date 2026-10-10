@@ -11,8 +11,9 @@ adapters, with a separate experimental task-scheduling component.
 **Work in progress — not ready for unattended or production use.** Provider
 loading, configuration validation, dry runs, and CLI failure handling have an offline
 test baseline. The repaired adapters request encoding and response checks have offline
-coverage. Live provider requests, credentials, DNS propagation, and native
-scheduling have not been validated.
+coverage. Main has live DuckDNS update/restoration evidence and native Linux cron
+and macOS launchd execution evidence. Other providers, Windows execution, and
+systemd timers still require validation; see the checklist below.
 Version 0.1.0a1 is the initial experimental alpha. PyPI publication is on hold.
 
 ## Evaluate the alpha candidate
@@ -62,8 +63,11 @@ need live confirmation. No adapter verifies DNS propagation.
 See [provider repair status](docs/PROVIDERS.md).
 
 The unified scheduler validates daily schedules and provides Linux, macOS, and
-Windows previews. Main also supports explicit named task installation/removal on
-all three platforms; native execution remains unvalidated. The published alpha
+Windows previews. Main supports explicit named task installation/removal on
+all three platforms, with a choice of cron or systemd user timers on Linux.
+Use `--scheduler cron` or `--scheduler systemd` with `--preview NAME`,
+`--install NAME`, `--status NAME`, or `--remove NAME`. Existing cron-specific
+commands remain supported. Native evidence is tracked per platform. The published alpha
 has previews only. See [scheduler validation](docs/SCHEDULER.md), the
 [1.0 validation checklist](docs/RELEASE_VALIDATION.md), and
 [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -78,10 +82,10 @@ Do not share credentials, raw provider errors, or password-bearing URLs.
 Licensed under [BSD-2-Clause](LICENSE).
 
 macOS scheduler definitions can now be inspected with `--preview-launchd`; see
-[the scheduler guide](docs/SCHEDULER.md). Native installation remains unavailable.
+[the scheduler guide](docs/SCHEDULER.md) for explicit main-branch registration.
 
 Windows scheduler XML can now be inspected with `--preview-windows --start-date YYYY-MM-DD`;
-see [the scheduler guide](docs/SCHEDULER.md). Native registration remains unavailable.
+see [the scheduler guide](docs/SCHEDULER.md) for explicit main-branch registration.
 
 Legacy TaskN configurations now support validated daily planning with
 `python -m UTaskScheduler.scheduler --config-file tasks.ini --dry-run`.
