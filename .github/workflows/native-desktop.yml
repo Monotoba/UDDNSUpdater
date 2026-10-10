@@ -1,0 +1,26 @@
+name: Native desktop scheduler integration
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-desktop-scheduler-probe
+  cancel-in-progress: false
+jobs:
+  native-desktop:
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install package
+        run: python -m pip install .
+      - name: Verify actual scheduled execution and cleanup
+        run: python tools/live_desktop_scheduler.py
