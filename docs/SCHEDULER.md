@@ -300,3 +300,35 @@ history. Actual launchd execution, permissions, login/logout behavior, and misse
 triggers require macOS integration validation before 1.0. Automated tests mock
 launchctl and never register real tasks. No system daemon or elevated installation
 is supported.
+
+## Development toward 1.0: explicit Windows registration
+
+Main now supports `--install-windows NAME --start-date YYYY-MM-DD` and
+`--remove-windows NAME`. The published alpha still has previews only.
+Registration creates a task named UDDNSUpdater-NAME at the local root task path.
+It uses the current user's SID, InteractiveToken logon, and LeastPrivilege;
+no password, remote account, or elevated principal is requested. The user must
+be logged on for execution. Windows task permissions may still prevent registration.
+
+```powershell
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --install-windows ddns --start-date 2026-10-10 -- C:\Python\python.exe C:\Tools\ddns_updater.py --config-file C:\Private\ddns.ini --state-file C:\Private\state.json --refresh-seconds 3600
+python -m UTaskScheduler.utask_scheduler --remove-windows ddns
+```
+
+Paths, date, and interval are examples; choose them for your environment/provider.
+Installation accepts 1–48 daily triggers and the existing absolute .exe/argument
+rules. Percent characters remain unsupported because native expansion could
+change arguments. Existing names are rejected, with no forced overwrite.
+Remove explicitly before reinstalling. Removal requires the managed description
+and current-user SID; it verifies that the named task is gone. Registered XML is
+checked for expected command, arguments, trigger boundaries, logon type, and run
+level. Verification failures can leave a registered task; inspect Task Scheduler
+before retrying. Removing a task does not guarantee its running process is stopped.
+
+PowerShell runs without a profile or interactive prompts, with a 30-second timeout.
+User values arrive as JSON on stdin, not interpolated script code. Raw diagnostics
+are withheld. Task Scheduler module availability, permissions, environment,
+battery/idle defaults, login state, missed triggers, and actual execution remain
+Windows integration gates for 1.0. Automated tests mock task commands; Windows CI
+parses the PowerShell syntax without registering tasks. Avoid concurrent edits of
+the same name. No system, remote, password-based, or elevated tasks are supported.
