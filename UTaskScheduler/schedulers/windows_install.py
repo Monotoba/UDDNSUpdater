@@ -44,9 +44,11 @@ try {
         $created = Get-ScheduledTask -TaskName $p.name -TaskPath '\' -ErrorAction Stop
         $phase = 'identity'
         if ($created.Description -ne $p.marker -or -not (Test-CurrentUser $created.Principal.UserId $sid)) { throw 'verification' }
+        $phase = 'runlevel'
+        if ($null -eq $created.Principal.RunLevel -or [int]$created.Principal.RunLevel -ne 0) { throw 'runlevel' }
         $phase = 'export'
         $export = Export-ScheduledTask -TaskName $p.name -TaskPath '\' -ErrorAction Stop
-        @{ok=$true; xml=$export} | ConvertTo-Json -Compress
+        @{ok=$true; xml=$export; run_level='LeastPrivilege'} | ConvertTo-Json -Compress
     } elseif ($p.operation -eq 'remove') {
         $phase = 'ownership'
         if ($task.Count -ne 1 -or $task[0].Description -ne $p.marker -or -not (Test-CurrentUser $task[0].Principal.UserId $sid)) { throw 'ownership' }
@@ -81,7 +83,7 @@ def invoke(operation, name, definition=None):
                                                   'xml':definition, 'marker':MARKER}),
                                 capture_output=True, text=True, encoding='utf-8', timeout=30)
         if result.returncode:
-            phase = re.fullmatch(r'UDDNS native failure phase: (input|collision|registration|identity|export|ownership|removal)',
+            phase = re.fullmatch(r'UDDNS native failure phase: (input|collision|registration|identity|runlevel|export|ownership|removal)',
                                  result.stderr.strip())
             if phase:
                 raise WindowsPreviewError('Native task operation failed during ' + phase.group(1)
@@ -124,6 +126,11 @@ def install(name, command, intervals, start_date):
             mismatch = tag
             expected = root.find('.//'+q(tag))
             received = actual.find('.//'+q(tag))
+            # Native export can omit the default RunLevel. Accept that only when
+            # the registered principal was independently checked as LUA (0).
+            if (tag == 'RunLevel' and received is None
+                    and response.get('run_level') == 'LeastPrivilege'):
+                continue
             if (None if expected is None else expected.text) != (None if received is None else received.text):
                 raise ValueError
         expected_times = [x.text for x in root.findall('.//'+q('StartBoundary'))]

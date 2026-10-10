@@ -333,6 +333,10 @@ and current-user SID; it verifies that the named task is gone. Registered XML is
 checked for expected command, arguments, trigger boundaries, logon type, and run
 level. Verification failures can leave a registered task; inspect Task Scheduler
 before retrying. Removing a task does not guarantee its running process is stopped.
+Principal account names and SID strings are resolved to a SID before ownership
+comparison. Native registration independently verifies run level 0 (least
+privilege). An omitted RunLevel in exported XML is accepted only with that native
+verification; explicit elevated or unverified levels are rejected.
 
 PowerShell runs without a profile or interactive prompts, with a 30-second timeout.
 User values arrive as JSON on stdin, not interpolated script code. Raw diagnostics
@@ -384,6 +388,8 @@ They do not replay missed runs on activation or wake a suspended computer. Timer
 accuracy is not a real-time execution guarantee. Jobs longer than their interval
 are not started again while the same oneshot service is active. Clock/time-zone,
 DST, reboot and suspend behavior require testing in the intended environment.
+Calendar triggers elapsed while sleeping may coalesce into one run on resume;
+Persistent=false concerns time while the timer is inactive, not sleep catch-up.
 
 A user manager generally follows login/session lifetime. Running without an active
 login may require an administrator-authorized `loginctl enable-linger USER`; inspect

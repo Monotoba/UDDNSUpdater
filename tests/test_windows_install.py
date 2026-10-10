@@ -10,13 +10,13 @@ from UTaskScheduler import utask_scheduler as app
 def native(monkeypatch):
     monkeypatch.setenv('SystemRoot', r'C:\Windows')
     calls = []
-    control = {'status':0, 'transform':lambda xml:xml}
+    control = {'status':0, 'transform':lambda xml:xml, 'extra': {'run_level': 'LeastPrivilege'}}
     def run(argv, **kwargs):
         assert argv[0] == r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
         assert kwargs['timeout'] == 30 and 'shell' not in kwargs
         payload = json.loads(kwargs['input'])
         calls.append(payload)
-        text = json.dumps({'ok':True, 'xml':control['transform'](payload['xml'])})
+        text = json.dumps({'ok':True, 'xml':control['transform'](payload['xml']), **control['extra']})
         return SimpleNamespace(returncode=control['status'], stdout=text, stderr='SECRET')
     monkeypatch.setattr(windows.subprocess, 'run', run)
     return calls, control
@@ -62,6 +62,26 @@ def test_invalid_schedule_before_native(native):
     with pytest.raises(WindowsPreviewError):
         windows.install('daily',[r'C:\Python\python.exe'],[[0,0]],None)
     assert not calls
+
+
+@pytest.mark.parametrize('effective,accepted', [('LeastPrivilege', True), ('HighestAvailable', False), (None, False)])
+def test_omitted_default_runlevel_requires_independent_native_check(native, effective, accepted):
+    _, control = native
+    import xml.etree.ElementTree as ET
+    def omit_runlevel(text):
+        root = ET.fromstring(text)
+        principal = root.find('.//{'+windows.NAMESPACE+'}Principal')
+        principal.remove(principal.find('{'+windows.NAMESPACE+'}RunLevel'))
+        return ET.tostring(root, encoding='unicode')
+    control['transform'] = omit_runlevel
+    control['extra'] = {} if effective is None else {'run_level': effective}
+    def install():
+        windows.install('daily', [r'C:\Python\python.exe'], [[0, 0]], '2026-10-10')
+    if accepted:
+        install()
+    else:
+        with pytest.raises(WindowsPreviewError, match='RunLevel'):
+            install()
 
 def test_timeout_sanitized(native, monkeypatch):
     def fail(*a, **k):
