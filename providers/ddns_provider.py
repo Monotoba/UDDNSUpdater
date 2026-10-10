@@ -25,6 +25,8 @@ class ProviderRetryError(ProviderError):
 
 
 class DDNSProvider:
+    # Conservative client policy, not an inferred provider retry specification.
+    transport_retry_seconds = 1800
     required_fields = ()
     request_timeout = (5, 15)
     max_response_chars = 65536
@@ -65,7 +67,7 @@ class DDNSProvider:
                 raise ProviderError("Provider response exceeds parsing limit.")
             return text
         except requests.exceptions.RequestException:
-            raise ProviderError("Provider HTTP request failed.") from None
+            raise ProviderRetryError(self.transport_retry_seconds) from None
         finally:
             if response is not None:
                 try:
@@ -75,7 +77,11 @@ class DDNSProvider:
 
     def get_external_ip(self):
         # ipify's IPv4-only plain-text endpoint; reject HTML and IPv6 responses.
-        return self.validate_ipv4(self.request_text("https://api.ipify.org").strip())
+        try:
+            text = self.request_text("https://api.ipify.org").strip()
+        except ProviderHTTPError:
+            raise ProviderRetryError(self.transport_retry_seconds) from None
+        return self.validate_ipv4(text)
 
     def update_ddns(self):
         raise NotImplementedError("Subclasses must implement update_ddns method.")

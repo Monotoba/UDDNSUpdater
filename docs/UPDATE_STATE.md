@@ -535,3 +535,24 @@ The existing v1 PUT still replaces the entire A-record set for the configured na
 with one IPv4 value; persistent controls do not change that scope. PAT/v3 migration,
 transport/discovery backoff, and live interoperability remain unfinished. Direct
 adapter callers must manage state themselves.
+
+## Shared transport backoff
+
+All active bundled CLI providers require persistent state. Requests transport
+exceptions (including timeout, connection and TLS failures) during discovery or
+updates now record a 1,800-second cooldown under the affected provider's existing
+error identity. Non-200 discovery HTTP responses also record this cooldown.
+The delay is a conservative client policy, not a provider-specified interval.
+It makes no automatic retry within a run. The current run aborts remaining services;
+later runs check the saved cooldown before discovery and allow a new attempt at
+its expiry boundary. Success clears the expired control. Configuration changes
+cannot bypass it; the existing shared aliases retain their shared scope.
+
+Discovery backoff is scoped to the configured provider, not globally to ipify.
+A later run for another provider can still attempt discovery. Separate state files
+also have independent controls. The Requests 5/15-second timeouts are not total
+wall-clock deadlines. Wall-clock changes affect expiry as described above.
+Invalid discovered IPv4, excessive bodies, and response-close failures remain
+controlled errors without newly inferred recovery timing. Provider HTTP rejections
+retain their provider-specific stop/cooldown policy. Direct adapter callers receive
+ProviderRetryError but must manage persistent scheduling themselves.

@@ -6,21 +6,21 @@ live updates or DNS propagation checks have been performed. No release is availa
 | Component | Implemented checks | Outstanding work |
 | --- | --- | --- |
 | Shared IPv4 discovery | HTTPS ipify IPv4 endpoint; strict IPv4 parsing; HTTP 200 required; redirects disabled; connect/read timeouts | Controlled live check |
-| NamecheapDDNS | Encoded parameters; same HTTP rules; XML structure, zero error count, Done=true, matching IP, no error entries; rejects malformed/duplicate required fields and DOCTYPE; persistent conservative stops | Transport backoff; controlled live response/propagation validation |
-| DuckDNS | Encoded domains/token/IP; same HTTP rules; exact OK response without verbose mode; persistent conservative stops | Transport backoff; controlled live acceptance/propagation validation |
-| NoIP | HTTPS Basic authentication; encoded hostname/IP; client-identifying User-Agent; good/nochg plus matching IPv4 for each hostname | Approved client identification, transport backoff, controlled live validation (state required for CLI stop/cooldown controls) |
-| Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied; persistent stop/retry controls | Transport backoff, controlled live validation (state required for CLI controls) |
+| NamecheapDDNS | Encoded parameters; same HTTP rules; XML structure, zero error count, Done=true, matching IP, no error entries; rejects malformed/duplicate required fields and DOCTYPE; persistent conservative stops | Live transport validation; controlled live response/propagation validation |
+| DuckDNS | Encoded domains/token/IP; same HTTP rules; exact OK response without verbose mode; persistent conservative stops | Live transport validation; controlled live acceptance/propagation validation |
+| NoIP | HTTPS Basic authentication; encoded hostname/IP; client-identifying User-Agent; good/nochg plus matching IPv4 for each hostname | Approved client identification, live transport validation, controlled live validation (state required for CLI stop/cooldown controls) |
+| Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied; persistent stop/retry controls | Live transport validation, controlled live validation (state required for CLI controls) |
 | ChangeIP | HTTPS Basic auth; encoded parameters; known plain-text success heading, matching IP when present | Provider response documentation/controlled live confirmation |
-| SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; good/nochg checks; persistent conservative stops | Full wiki access, retry policy, transport backoff, controlled live confirmation |
+| SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; good/nochg checks; persistent conservative stops | Full wiki access, retry policy, live transport validation, controlled live confirmation |
 | SpDYN | Reuses SecurePoint and shares its persistent stop identity | Same wiki/retry-policy/live-validation limitations as SecurePoint |
-| YDNS | Trailing-slash HTTPS endpoint; Basic auth; exact good; legacy aliases; persistent conservative stops | Transport backoff, live validation; optional record_id selection not implemented |
-| GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance; persistent conservative stops | Transport backoff; controlled live validation; PAT/v3 migration; named multi-value A sets are replaced |
+| YDNS | Trailing-slash HTTPS endpoint; Basic auth; exact good; legacy aliases; persistent conservative stops | Live transport validation, live validation; optional record_id selection not implemented |
+| GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance; persistent conservative stops | Live transport validation; controlled live validation; PAT/v3 migration; named multi-value A sets are replaced |
 | GoogleDomains | Disabled before network access; retained discoverable class and migration error | Service unavailable for migrated domains |
-| Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks; shared persistent stops | Transport backoff; controlled live response confirmation; account linked-update scope; v2 not implemented |
-| CloudNS | Documented IPv4 DynamicURL endpoint; encoded per-record q key and ip; shared HTTP protections; exact OK response; persistent conservative stops | Transport backoff; controlled live acceptance/propagation validation; optional JSON/failover parameters not implemented |
+| Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks; shared persistent stops | Live transport validation; controlled live response confirmation; account linked-update scope; v2 not implemented |
+| CloudNS | Documented IPv4 DynamicURL endpoint; encoded per-record q key and ip; shared HTTP protections; exact OK response; persistent conservative stops | Live transport validation; controlled live acceptance/propagation validation; optional JSON/failover parameters not implemented |
 | DNSMax | Disabled before network access; retained class with migration errors | Provider closed January 27, 2026 |
-| EntryDNS | Documented per-record HTTPS GET; encoded token path and explicit ip; shared HTTP protections; exact OK policy; persistent conservative stops | Transport backoff; provider response specification/controlled live confirmation; token-to-hostname association not verified |
-| EuroDynDNS | Documented HTTPS update endpoint; encoded hostname/myip; Basic auth; single good/nochg status with matching IPv4 when present; persistent conservative stops | Transport backoff; controlled live response/propagation validation |
+| EntryDNS | Documented per-record HTTPS GET; encoded token path and explicit ip; shared HTTP protections; exact OK policy; persistent conservative stops | Live transport validation; provider response specification/controlled live confirmation; token-to-hostname association not verified |
+| EuroDynDNS | Documented HTTPS update endpoint; encoded hostname/myip; Basic auth; single good/nochg status with matching IPv4 when present; persistent conservative stops | Live transport validation; controlled live response/propagation validation |
 
 The shared discovery endpoint is `https://api.ipify.org`. It returns an IPv4
 address in plain text according to [ipify's documentation](https://www.ipify.org/).
@@ -75,7 +75,7 @@ stop controls and 30-minute 911/HTTP-500 cooldowns and checks them before discov
 on later invocations. Section/account/configuration changes cannot bypass controls
 in the same state file. Unknown responses are conservative stops; direct adapters
 must handle typed errors themselves. See [state behavior and recovery](UPDATE_STATE.md).
-Transport backoff, approved identification, and live validation remain unfinished;
+Live transport validation, approved identification, and live validation remain unfinished;
 unattended scheduling is not ready.
 
 Dynu uses [its documented HTTPS protocol](https://www.dynu.com/en-US/DynamicDNS/IP-Update-Protocol)
@@ -88,7 +88,7 @@ does not specify their interval. Other unconfirmed/HTTP responses persist a stop
 requiring review. Normal CLI updates require state options, and controls cover all
 Dynu sections/accounts in the same file, checked before discovery. No immediate
 retry loop or native scheduling occurs. See [state behavior](UPDATE_STATE.md);
-transport backoff and controlled live validation remain incomplete.
+live transport validation and controlled live validation remain incomplete.
 
 ## ChangeIP and Securepoint: limited response evidence
 
@@ -252,7 +252,7 @@ identifies HTTP 400/401/404 error meanings but does not specify retry timing; al
 other rejected statuses use conservative client stops without an inferred cooldown.
 Legacy credential aliases and exact good acceptance are preserved. Investigate the
 cause before explicit clearing; see [state behavior and recovery](UPDATE_STATE.md).
-Transport backoff, optional record selection, and live validation remain incomplete.
+Live transport validation, optional record selection, and live validation remain incomplete.
 
 ## ChangeIP error-control and eligibility update
 
@@ -265,3 +265,6 @@ direct adapter, without disabling unrelated domains or the whole service. Sets
 See [announcement](https://www.changeip.com/accounts/index.php/announcements) and
 [state behavior/recovery](UPDATE_STATE.md). Existing success-heading parsing is
 retained; current full response compatibility and live validation remain outstanding.
+
+Shared transport exceptions and rejected discovery HTTP statuses now use persistent
+1,800-second provider-scoped cooldowns. See [scope and limitations](UPDATE_STATE.md).
