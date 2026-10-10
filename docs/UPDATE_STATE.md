@@ -1,7 +1,7 @@
 # Accepted-update state foundation
 
 `update_state.py` provides a local accepted-update state store. The DDNS CLI
-now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap/DuckDNS/FreeDNS/Afraid/CloudNS/EntryDNS conservative stops
+now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap/DuckDNS/FreeDNS/Afraid/CloudNS/EntryDNS/GoDaddy conservative stops
 are implemented; other providers remain unfinished; this is not readiness for unattended operation.
 
 ```python
@@ -506,3 +506,32 @@ of CloudNS in provider_error_key. Transport/discovery backoff and live
 interoperability remain unverified. Direct adapter callers must manage state
 themselves. The configured hostname is a local label; record selection uses the
 provider key/token, whose association still needs account verification.
+
+## GoDaddy conservative stops
+
+Normal GoDaddyDDNS CLI updates require `--state-file` and `--refresh-seconds`;
+dry-run remains offline without state. Empty HTTP 200/204 acceptance is unchanged.
+HTTP rejection or an unexpected response body persists a provider-wide stop and
+aborts remaining updates in that run. Later runs check it before discovery.
+Changing keys, domains, hostnames, or sections cannot bypass it. All GoDaddy
+services sharing the state file are covered. This conservative client policy
+does not imply that an underlying error affects all accounts. No undocumented
+retry interval is inferred.
+
+Investigate the cause before explicitly clearing only this stop. Preserve accepted
+entries:
+
+```python
+from update_state import open_state
+from ddns_updater import provider_error_key
+from providers.provider_godaddy import GoDaddyDDNS
+
+with open_state('/absolute/path/to/state.json') as state:
+    state.clear_error(provider_error_key(GoDaddyDDNS, {}))
+    state.save()
+```
+
+The existing v1 PUT still replaces the entire A-record set for the configured name
+with one IPv4 value; persistent controls do not change that scope. PAT/v3 migration,
+transport/discovery backoff, and live interoperability remain unfinished. Direct
+adapter callers must manage state themselves.

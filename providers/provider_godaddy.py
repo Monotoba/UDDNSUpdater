@@ -1,10 +1,11 @@
 from urllib.parse import quote
 
-from .ddns_provider import DDNSProvider, ProviderError
+from .ddns_provider import DDNSProvider, ProviderError, ProviderHTTPError, ProviderStopError
 
 
 class GoDaddyDDNS(DDNSProvider):
     required_fields = ("api_key", "api_secret", "domain", "hostname")
+    requires_persistent_state = True
 
     def update_ddns(self):
         external_ip = self.validate_ipv4(self.external_ip)
@@ -16,14 +17,17 @@ class GoDaddyDDNS(DDNSProvider):
         authorization = f"sso-key {self.config['api_key']}:{self.config['api_secret']}"
         if any(ord(c) < 32 or ord(c) > 126 for c in authorization):
             raise ProviderError("Invalid GoDaddy authorization configuration.")
-        text = self.request_text(
-            f"https://api.godaddy.com/v1/domains/{domain}/records/A/{name}",
-            headers={"Authorization": authorization, "Content-Type": "application/json"},
-            method="PUT", payload=[{"data": external_ip, "ttl": 600}],
-            accepted_status=(200, 204),
-        )
+        try:
+            text = self.request_text(
+                f"https://api.godaddy.com/v1/domains/{domain}/records/A/{name}",
+                headers={"Authorization": authorization, "Content-Type": "application/json"},
+                method="PUT", payload=[{"data": external_ip, "ttl": 600}],
+                accepted_status=(200, 204),
+            )
+        except ProviderHTTPError:
+            raise ProviderStopError("GoDaddy HTTP rejection requires intervention.") from None
         # The reference's response table lists 200; its prose lists 204. Both
         # represent no-content acceptance. An unexpected body is not success.
         if text.strip():
-            raise ProviderError("GoDaddy returned an unexpected response body.")
+            raise ProviderStopError("GoDaddy did not confirm the update; intervention required.")
         return True
