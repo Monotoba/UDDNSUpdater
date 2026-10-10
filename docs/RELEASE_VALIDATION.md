@@ -9,7 +9,7 @@ Never record credentials, tokens, or raw provider bodies in public evidence.
 
 | Area | Implemented and tested | Evidence still required |
 | --- | --- | --- |
-| Linux cron | Explicit named install/remove, preservation checks, mocked commands, shell argv round trip | Real user crontab registration, daemon execution, environment, removal and unrelated-entry preservation |
+| Linux cron | Explicit named install/remove; real Ubuntu 24.04 daemon execution, exact argv and crontab restoration in [run 38025262434](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38025262434), main e0ccf29, 2026-10-10 UTC | Other distributions and user-specific environments |
 | macOS launchd | Explicit user-agent registration/removal, plist validation, mocked commands | GUI-domain registration, actual launchctl error behavior, scheduled execution, removal |
 | Windows tasks | Explicit current-user registration/removal, ownership checks, mocked commands, PowerShell syntax in Windows CI | Real registration/export, interactive execution and environment, removal, unrelated-task preservation |
 | Providers | Fourteen active adapter classes, controlled request/response errors and persistent state | Provider-specific contract gaps in PROVIDERS.md; disposable-record acceptance and propagation |
@@ -140,3 +140,26 @@ No DNS updates or credentials are involved. Forced runner termination can preven
 cleanup, but the hosted runner is disposable. Routine push/PR tests never register
 tasks. A successful manual run validates this runner/platform combination only;
 macOS, Windows, and user-specific environments remain separate checks.
+
+## Manual Windows/macOS scheduler integration
+
+`Native desktop scheduler integration` is a manual main-only workflow on disposable
+Windows and Intel macOS hosted runners. It installs the package, selects an unused
+UUID task name, schedules the packaged probe roughly two minutes ahead, and waits
+up to three minutes for execution. It checks exact arguments (spaces, quotes,
+backslashes, an empty argument and a leading flag), executable, and timestamp,
+and logs the native working directory. No manual task start is used.
+
+Windows uses the current-user interactive task backend and compares exported root
+task definitions before registration and after removal. macOS requires an existing
+GUI user domain and compares user LaunchAgents plist contents; CLI removal also
+verifies the launchd label is absent. The harness does not create a GUI session or
+change Windows logon type to make the test pass. A hosted runner lacking the
+required session must fail rather than claim execution support.
+
+Ordinary failures trigger removal of a partially installed probe, preserving
+unrelated definitions. A colliding task is refused before mutation. Hard termination
+or failure of native inventory/removal can prevent cleanup; runners are disposable.
+No DNS, credentials, or routine push/PR task registration are involved. Success
+proves only the tested hosted-runner session, not execution while logged out or
+all user environments.
