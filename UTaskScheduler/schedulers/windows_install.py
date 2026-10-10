@@ -114,22 +114,26 @@ def install(name, command, intervals, start_date):
     root.find(q('Actions')).set('Context', 'CurrentUser')
     definition = ET.tostring(root, encoding='unicode')
     response = invoke('install', name, definition)
+    mismatch = 'XML'
     try:
         exported = response['xml']
         if not isinstance(exported, str) or '<!DOCTYPE' in exported.upper():
             raise ValueError
         actual = ET.fromstring(exported)
         for tag in ('Command', 'Arguments', 'Description', 'LogonType', 'RunLevel'):
+            mismatch = tag
             expected = root.find('.//'+q(tag))
             received = actual.find('.//'+q(tag))
             if (None if expected is None else expected.text) != (None if received is None else received.text):
                 raise ValueError
         expected_times = [x.text for x in root.findall('.//'+q('StartBoundary'))]
         actual_times = [x.text for x in actual.findall('.//'+q('StartBoundary'))]
+        mismatch = 'StartBoundary'
         if expected_times != actual_times:
             raise ValueError
     except (KeyError, TypeError, ValueError, ET.ParseError):
-        raise WindowsPreviewError('Task registered but definition verification failed; inspect Task Scheduler.') from None
+        raise WindowsPreviewError('Task registered but definition verification failed for ' + mismatch
+                                  + '; inspect Task Scheduler.') from None
 
 
 def remove(name):
