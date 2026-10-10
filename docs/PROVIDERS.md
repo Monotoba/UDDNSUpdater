@@ -62,7 +62,10 @@ Each comma-separated hostname/group must have one response line: good or nochg
 followed by the requested IPv4. Unexpected counts, wrong IPs, and rejection codes
 raise controlled errors. The optional `user_agent` setting overrides the prototype
 identifier (Monotoba UDDNSUpdater/OS-development plus the public repository issues URL).
-Only printable ASCII is allowed to prevent header injection. The default contact
+Only nonblank printable ASCII is allowed to prevent header injection. Empty
+hostname-list members and invalid headers are rejected before discovery by direct
+construction and by CLI configuration validation, including dry runs. Direct
+updates revalidate settings if a caller mutates the configuration. The default contact
 URL is not an approved/certified No-IP User-Agent and does not establish compliance
 with its recommended maintainer-email format. Provide an appropriate identifier
 and complete approval requirements before using it as a distributed client.

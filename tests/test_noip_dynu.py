@@ -102,12 +102,11 @@ def test_noip_multi_host_results(monkeypatch, body, accepted):
 
 
 @pytest.mark.parametrize("agent", ["", "bad\r\nSecret: " + SECRET, "bad\x00", "nonascii-\u2603"])
-def test_invalid_user_agent_prevents_update(monkeypatch, agent):
+def test_invalid_user_agent_prevents_discovery(monkeypatch, agent):
     calls, _ = mock_http(monkeypatch, "unused")
-    provider = NoIP("service", dict(SETTINGS, user_agent=agent))
     with pytest.raises(ProviderError):
-        provider.update_ddns()
-    assert len(calls) == 1
+        NoIP("service", dict(SETTINGS, user_agent=agent))
+    assert calls == []
 
 
 def test_custom_noip_agent(monkeypatch):
@@ -118,11 +117,11 @@ def test_custom_noip_agent(monkeypatch):
 
 
 @pytest.mark.parametrize("hostname", [",", "one,", ",two", "one, ,two"])
-def test_empty_noip_hosts_prevent_update(monkeypatch, hostname):
+def test_empty_noip_hosts_prevent_discovery(monkeypatch, hostname):
     calls, _ = mock_http(monkeypatch, "unused")
     with pytest.raises(ProviderError):
         NoIP("service", dict(SETTINGS, hostname=hostname)).update_ddns()
-    assert len(calls) == 1
+    assert calls == []
 
 
 @pytest.mark.parametrize("cls", [NoIP, Dynu])

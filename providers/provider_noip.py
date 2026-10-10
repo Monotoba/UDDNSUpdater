@@ -5,18 +5,34 @@ class NoIP(DDNSProvider):
     required_fields = ('username', 'password', 'hostname')
     requires_persistent_state = True
 
-    def update_ddns(self):
-        external_ip = self.validate_ipv4(self.external_ip)
-        hosts = self.config["hostname"].split(",")
-        if any(not host.strip() for host in hosts):
-            raise ProviderError("Invalid No-IP hostname list.")
-        user_agent = self.config.get(
+    @staticmethod
+    def user_agent_for(config):
+        return config.get(
             "user_agent",
             f"Monotoba UDDNSUpdater/{platform.system()}-development "
             "https://github.com/Monotoba/UDDNSUpdater/issues",
         )
-        if not user_agent.strip() or any(ord(c) < 32 or ord(c) > 126 for c in user_agent):
+
+    @classmethod
+    def validate_settings(cls, config):
+        hostname = config.get("hostname", "")
+        if not isinstance(hostname, str) or any(not host.strip() for host in hostname.split(",")):
+            raise ProviderError("Invalid No-IP hostname list.")
+        user_agent = cls.user_agent_for(config)
+        if (not isinstance(user_agent, str) or not user_agent.strip()
+                or any(ord(c) < 32 or ord(c) > 126 for c in user_agent)):
             raise ProviderError("Invalid No-IP User-Agent.")
+
+    def __init__(self, name, config):
+        self.validate_settings(config)
+        super().__init__(name, config)
+
+    def update_ddns(self):
+        # Revalidate in case a direct caller changed settings after construction.
+        self.validate_settings(self.config)
+        external_ip = self.validate_ipv4(self.external_ip)
+        hosts = self.config["hostname"].split(",")
+        user_agent = self.user_agent_for(self.config)
         try:
             text = self.request_text(
                 "https://dynupdate.no-ip.com/nic/update",
