@@ -133,6 +133,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Validate a daily native task schedule")
     parser.add_argument("--config-file", default="config.ini")
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--install-cron", metavar="NAME", help="Explicitly install/replace a named Linux user-crontab block")
+    mode.add_argument("--remove-cron", metavar="NAME", help="Remove only a named Linux user-crontab block")
     mode.add_argument("--dry-run", action="store_true", help="Validate only; no native task installation")
     mode.add_argument("--preview-cron", action="store_true", help="Print Linux user-crontab definition without installation")
     mode.add_argument("--preview-launchd", action="store_true", help="Print macOS user-agent plist without installation")
@@ -145,6 +147,24 @@ def main(argv=None):
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     try:
         scheduler = UTaskScheduler(args.config_file)
+        if args.install_cron is not None or args.remove_cron is not None:
+            if sys.platform != 'linux':
+                raise SchedulerError('Native cron operations are available only on Linux.')
+            if args.remove_cron is not None and command:
+                raise SchedulerError('Remove-cron does not accept a command.')
+            if __package__:
+                from .schedulers.cron_install import apply
+                from .schedulers.scheduler_unix import CronPreviewError
+            else:
+                from schedulers.cron_install import apply
+                from schedulers.scheduler_unix import CronPreviewError
+            try:
+                apply(args.install_cron or args.remove_cron,
+                      scheduler.preview_cron(command) if args.install_cron is not None else None)
+            except CronPreviewError as error:
+                raise SchedulerError(str(error)) from None
+            print('Named user-crontab operation verified.')
+            return 0
         if args.preview_cron:
             preview = scheduler.preview_cron(command)
         elif args.preview_launchd:

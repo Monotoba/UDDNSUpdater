@@ -238,3 +238,31 @@ represent more. Use absolute executable/resource paths for eventual native jobs.
 Omitting --dry-run returns exit 1 for a valid configuration; invalid configurations
 return 2; successful planning returns 0. Multi-task preview output and native
 installation remain unavailable. `UTaskScheduler/sample.ini` is a planning example.
+
+## Development toward 1.0: explicit Linux installation
+
+Main now supports explicit `--install-cron NAME` and `--remove-cron NAME` modes.
+The published 0.1.0a1 release still has previews only. These new modes affect only
+an existing Linux user crontab, never system crontabs or another user's tasks.
+Names use 1–64 ASCII letters, digits, underscores or hyphens. Normal schedule()
+calls remain blocked; installation requires the explicit CLI mode.
+
+```sh
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --install-cron ddns -- /absolute/path/to/python /absolute/path/to/ddns_updater.py --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600
+python -m UTaskScheduler.utask_scheduler --remove-cron ddns
+```
+
+The refresh value is an example, not a verified provider interval. Use absolute
+paths and a protected existing state directory. The commands read the existing
+crontab, preserve unrelated entries, replace only their named marker block, and
+verify the result. Reinstallation is idempotent. Removing a missing block does
+not write. A missing/unreadable crontab fails closed: initialize an empty user
+crontab yourself first. Unsupported shell settings and malformed duplicate markers
+also fail closed. Crontab stderr is withheld, and native commands have a 15-second
+timeout. Failures after a write require checking native state before retrying.
+
+Back up your crontab and avoid simultaneous edits: crontab exposes no atomic
+compare-and-swap, so concurrent editors can overwrite each other's changes.
+Installation is mocked in automated tests; real cron execution/environment and
+cross-platform native integration remain release gates for 1.0. macOS/Windows
+installation is still unavailable. No task is installed by tests or build checks.

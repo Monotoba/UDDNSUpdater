@@ -19,3 +19,10 @@ and automated state recovery are not implemented. Do not infer production or
 unattended readiness from passing offline tests.
 
 CI must never change DNS or install real system tasks.
+
+## Development toward 1.0
+
+Explicit named Linux user-crontab install/remove is implemented on main with
+mocked native-command regression tests. The 0.1.0a1 tag remains unchanged.
+Native cron execution/environment validation, macOS/Windows registration,
+provider evidence gaps, and controlled live validation remain 1.0 release gates.
