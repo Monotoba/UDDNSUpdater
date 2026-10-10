@@ -1,7 +1,7 @@
 # Provider repair status
 
 Reviewed on 2026-10-09. All validation below is offline with mocked HTTP. No
-live updates or DNS propagation checks have been performed. No release is available.
+live updates or DNS propagation checks have been performed. See [alpha scope](ALPHA.md) for release limitations.
 
 | Component | Implemented checks | Outstanding work |
 | --- | --- | --- |
