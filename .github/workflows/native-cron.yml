@@ -1,0 +1,30 @@
+name: Native Linux cron integration
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-linux-cron-probe
+  cancel-in-progress: false
+jobs:
+  native-cron:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install package
+        run: python -m pip install .
+      - name: Ensure native cron is available
+        run: |
+          if ! command -v crontab >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y cron
+          fi
+          sudo systemctl start cron
+          sudo systemctl is-active --quiet cron
+      - name: Verify actual scheduled execution and cleanup
+        run: python tools/live_cron.py

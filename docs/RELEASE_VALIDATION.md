@@ -123,3 +123,20 @@ cleanup, or network/provider failure can still prevent restoration. If a run
 fails or is canceled, inspect the record and restore the logged baseline through
 the DuckDNS dashboard before rerunning. This workflow proves DuckDNS integration
 only; it does not close other provider or native scheduling validation gates.
+
+## Manual Linux cron integration
+
+`Native Linux cron integration` runs only when manually dispatched on main. It
+uses a disposable Ubuntu 24.04 hosted runner, starts its native cron service, and
+installs the package. The harness refuses a nonempty pre-existing user crontab.
+It initializes a harmless unrelated entry, installs one named probe scheduled
+roughly two minutes ahead, and waits up to three minutes for daemon execution.
+The installed module must preserve spaces, quotes, empty arguments, percent and
+backslash-percent arguments, use the intended executable, and run from the cron
+user's home directory. Named removal must preserve the unrelated entry; final
+cleanup restores the original empty/absent crontab even after ordinary failures.
+
+No DNS updates or credentials are involved. Forced runner termination can prevent
+cleanup, but the hosted runner is disposable. Routine push/PR tests never register
+tasks. A successful manual run validates this runner/platform combination only;
+macOS, Windows, and user-specific environments remain separate checks.

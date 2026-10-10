@@ -23,7 +23,8 @@ The next work is validation rather than adding more scheduler backends:
 
 [RELEASE_VALIDATION.md](docs/RELEASE_VALIDATION.md) records the evidence required
 and current gaps. Passing mocked tests does not establish native or provider
-interoperability. CI must never change DNS or install real system tasks.
+interoperability. Routine push/PR CI stays offline and never installs native tasks. Separate manual
+live workflows use disposable DNS records or hosted-runner tasks explicitly.
 
 IPv6, environment-based credentials, total request deadlines, global discovery
 controls, and automated state recovery are not implemented. Their absence must be

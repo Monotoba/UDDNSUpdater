@@ -26,3 +26,14 @@ and restoration for this candidate/account. It does not establish authoritative
 propagation, scheduled execution, live error recovery, other accounts/providers,
 or general production readiness. The user should regenerate the exposed test
 token and remove the disposable hostname when finished.
+
+## Subsequent GitHub Actions validation
+
+[Live workflow run 38022228218](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38022228218)
+passed on main commit 5d8e6ea89558734fb163c184a5ba0fa3e0710a29.
+At 2026-10-10 03:55 UTC it established an authoritative baseline, confirmed the
+updated authoritative A record, verified repeat suppression, restored the
+original address, and authoritatively verified restoration. This closes the
+authoritative-query gap for this DuckDNS candidate/account on the hosted runner.
+Other providers and native scheduler execution are separate validation gates.
+The dedicated hostname is retained for manual live workflow checks.
