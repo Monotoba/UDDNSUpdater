@@ -1,20 +1,24 @@
 # Provider repair status
 
-Reviewed on 2026-10-09. All validation below is offline with mocked HTTP. No
-live updates or DNS propagation checks have been performed. See [alpha scope](ALPHA.md) for release limitations.
+Reviewed on 2026-10-10. This describes main, not the published alpha. All active
+adapters have offline mocked-HTTP tests. DuckDNS additionally passed a controlled
+live CLI update, authoritative DNS verification, repeat suppression, and verified
+restoration in [run 38022228218](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38022228218).
+See [live evidence](LIVE_VALIDATION.md), [release gates](RELEASE_VALIDATION.md),
+and [published alpha scope](ALPHA.md). Other providers have not been live-tested.
 
 | Component | Implemented checks | Outstanding work |
 | --- | --- | --- |
-| Shared IPv4 discovery | HTTPS ipify IPv4 endpoint; strict IPv4 parsing; HTTP 200 required; redirects disabled; connect/read timeouts | Controlled live check |
+| Shared IPv4 discovery | HTTPS ipify IPv4 endpoint; strict IPv4 parsing; HTTP 200 required; redirects disabled; connect/read timeouts | Tested through the DuckDNS live CLI check; other environments remain unverified |
 | NamecheapDDNS | Encoded parameters; same HTTP rules; XML structure, zero error count, Done=true, matching IP, no error entries; rejects malformed/duplicate required fields and DOCTYPE; persistent conservative stops | Live transport validation; controlled live response/propagation validation |
-| DuckDNS | Encoded domains/token/IP; same HTTP rules; exact OK response without verbose mode; persistent conservative stops | Live transport validation; controlled live acceptance/propagation validation |
+| DuckDNS | Encoded domains/token/IP; same HTTP rules; exact OK response without verbose mode; persistent conservative stops | Verified on the dedicated DuckDNS test record; other accounts and live error recovery remain unverified |
 | NoIP | HTTPS Basic authentication; encoded hostname/IP; client-identifying User-Agent; good/nochg plus matching IPv4 for each hostname | Approved client identification, live transport validation, controlled live validation (state required for CLI stop/cooldown controls) |
 | Dynu | HTTPS Basic authentication; encoded hostname/IP; myipv6=no; exact good/nochg status with matching IP when supplied; persistent stop/retry controls | Live transport validation, controlled live validation (state required for CLI controls) |
 | ChangeIP | HTTPS Basic auth; encoded parameters; known plain-text success heading, matching IP when present | Provider response documentation/controlled live confirmation |
 | SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; good/nochg checks; persistent conservative stops | Full wiki access, retry policy, live transport validation, controlled live confirmation |
 | SpDYN | Reuses SecurePoint and shares its persistent stop identity | Same wiki/retry-policy/live-validation limitations as SecurePoint |
 | YDNS | Trailing-slash HTTPS endpoint; Basic auth; exact good; legacy aliases; optional record_id; persistent conservative stops | Live transport validation, live validation; record_id/account association needs live confirmation |
-| GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance; persistent conservative stops | Live transport validation; controlled live validation; live PAT/v3 access/record association; v1 named multi-value A sets are replaced |
+| GoDaddyDDNS | V1 named A-set PUT with key/secret; v3 single A-record PUT with PAT/record_id and matching JSON; shared HTTP protections and persistent stops | Live transport validation; controlled live validation; live PAT/v3 access/record association; v1 named multi-value A sets are replaced |
 | GoogleDomains | Disabled before network access; retained discoverable class and migration error | Service unavailable for migrated domains |
 | Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks; shared persistent stops | Live transport validation; controlled live response confirmation; account linked-update scope; v2 not implemented |
 | CloudNS | Documented IPv4 DynamicURL endpoint; encoded per-record q key and ip; shared HTTP protections; exact OK response; persistent conservative stops | Live transport validation; controlled live acceptance/propagation validation; optional JSON/failover parameters not implemented |
@@ -68,7 +72,16 @@ construction and by CLI configuration validation, including dry runs. Direct
 updates revalidate settings if a caller mutates the configuration. The default contact
 URL is not an approved/certified No-IP User-Agent and does not establish compliance
 with its recommended maintainer-email format. Provide an appropriate identifier
-and complete approval requirements before using it as a distributed client.
+and resolve client approval before advertising distributed No-IP support.
+
+Rechecked on 2026-10-10: the official request guide still specifies a software
+identifier containing company, program, OS/release version and maintainer email,
+and warns that unapproved identifiers can be limited or blocked. Its
+[certification guide](https://www.noip.com/integrate/certify) recommends submission
+and describes software authors providing the product to No-IP for testing. An
+ASCII-valid override is not proof of approval. Before the No-IP release gate can
+close, select a real maintainer contact, agree an identifier with No-IP, and record
+the approval outcome. No certification outcome is recorded in the project evidence.
 
 No-IP specifies updates only when the IP changes and requires stopping after
 errors; 911/HTTP 500 requires at least 30 minutes before another attempt.
@@ -126,7 +139,8 @@ include 400, 401, and 404. The adapter now follows that contract and the shared
 HTTP checks. It does not send the old undocumented domain/apikey query fields.
 Use the API username/password from your account and a hostname, not a domain ID.
 Legacy aliases and migration details are in [CLI.md](CLI.md). Optional record_id
-selection and IPv6 updating are outside the current implementation.
+selection is implemented on main; account/record association still needs a live
+check. IPv6 updating is outside the current implementation.
 
 ## GoDaddy and retired Google Domains
 
@@ -139,8 +153,9 @@ or propagation check is not implemented, so this is request acceptance only.
 
 [Authentication documentation](https://developer.godaddy.com/en/docs/api-users/auth)
 still lists classic sso-key credentials for Domains v1/v2, deprecated through
-2026. The existing api_key/api_secret settings are retained; PAT/v3 migration is
-future work. Use credentials for the correct account/environment. No live access
+2026. The existing api_key/api_secret settings are retained for v1. Main also
+implements explicit PAT/v3 single-record updates, described below. Use credentials
+for the correct account/environment. No live access
 or API entitlement has been validated for this project.
 
 [Squarespace's migration guide](https://support.squarespace.com/hc/en-us/articles/17131164996365-About-the-Google-Domains-migration-to-Squarespace)
@@ -237,16 +252,18 @@ abuse. Normal CLI updates now require persistent state options. Change detection
 avoids recently accepted unchanged updates. Rejected HTTP responses and unconfirmed
 bodies persist a provider-wide stop before subsequent discovery, including abuse
 and dnserr. The documentation gives no retry interval; automatic recovery is not
-inferred. Investigate and explicitly clear the stop as described in UPDATE_STATE.md. Explicit scheduler installation is implemented on main, but native execution
-remains unvalidated; no live DNS update or propagation check has been performed.
+inferred. Investigate and explicitly clear the stop as described in UPDATE_STATE.md.
+All four native scheduler backends have passed disposable-runner execution checks
+on main; see [release evidence](RELEASE_VALIDATION.md). EuroDNS live update and
+authoritative propagation remain unverified.
 
 ### Securepoint/SpDYN error-control update
 
 Normal CLI updates for both adapter names require state options. Rejected HTTP
 responses or unconfirmed bodies persist a shared provider-wide stop checked before
 IP discovery, so switching adapter names cannot bypass it. The official return-code
-page remains access-blocked; retry timing was not verified and no automatic cooldown
-is inferred. Stops require investigation and explicit clearing. This conservative
+page was rechecked on 2026-10-10 and remains access-blocked. Retry timing was not
+verified and no automatic cooldown is inferred. Stops require investigation and explicit clearing. This conservative
 client behavior does not establish live interoperability or complete provider-policy
 compliance. See [state behavior and recovery](UPDATE_STATE.md).
 
@@ -258,7 +275,8 @@ identifies HTTP 400/401/404 error meanings but does not specify retry timing; al
 other rejected statuses use conservative client stops without an inferred cooldown.
 Legacy credential aliases and exact good acceptance are preserved. Investigate the
 cause before explicit clearing; see [state behavior and recovery](UPDATE_STATE.md).
-Live transport validation, optional record selection, and live validation remain incomplete.
+Record selection is implemented and offline-tested. Live transport, selected-record
+association, response acceptance and propagation remain unverified.
 
 ## ChangeIP error-control and eligibility update
 
