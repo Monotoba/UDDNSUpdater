@@ -10,9 +10,9 @@ Never record credentials, tokens, or raw provider bodies in public evidence.
 | Area | Implemented and tested | Evidence still required |
 | --- | --- | --- |
 | Linux cron | Explicit named install/remove; real Ubuntu 24.04 daemon execution, exact argv and crontab restoration in [run 38025262434](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38025262434), main e0ccf29, 2026-10-10 UTC | Other distributions and user-specific environments |
-| Linux systemd | Named user service/timer generation, install/status/remove, ownership and preservation fixtures, native unit-parser check | Actual user-manager registration, scheduled execution, literal argv and cleanup |
-| macOS launchd | GUI-domain registration, scheduled Python 3.12 probe execution and removal on macOS 15 Intel in [run 38027149593](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38027149593), main 6ec710d, 2026-10-10 UTC; unrelated plist preservation | Other login environments, logout/sleep/DST behavior |
-| Windows tasks | Explicit current-user registration/removal, ownership checks, mocked commands, PowerShell syntax in Windows CI | Real registration/export, interactive execution and environment, removal, unrelated-task preservation |
+| Linux systemd | Real Ubuntu 24.04 user-manager registration, scheduled Python 3.12 execution, literal argv, home working directory, unit/link removal and inventory preservation in [run 38027896157](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38027896157), main 637a58c, 2026-10-10 UTC | Other distributions and login environments; logout/linger, reboot, suspend and DST |
+| macOS launchd | GUI-domain registration, scheduled Python 3.12 execution, exact argv, removal and unrelated plist preservation on macOS 15 Intel in [run 38028091981](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38028091981), main 4828cc3, 2026-10-10 UTC | Other login environments, logout/sleep/DST behavior |
+| Windows tasks | Real current-user registration/export, native SID/run-level verification, scheduled Python 3.12 execution, exact argv, removal and unrelated task preservation in [run 38028091981](https://github.com/Monotoba/UDDNSUpdater/actions/runs/38028091981), main 4828cc3, 2026-10-10 UTC | Other user/session environments, battery/idle defaults, sleep/DST behavior |
 | Providers | Fourteen active adapter classes, controlled request/response errors and persistent state | Provider-specific contract gaps in PROVIDERS.md; disposable-record acceptance and propagation |
 | YDNS | Optional record_id selection | Account-to-record association and selected-record update |
 | GoDaddy | Classic v1 and PAT/v3 single-record update | PAT scopes, existing record identity, v3 response and propagation |
@@ -164,6 +164,13 @@ or failure of native inventory/removal can prevent cleanup; runners are disposab
 No DNS, credentials, or routine push/PR task registration are involved. Success
 proves only the tested hosted-runner session, not execution while logged out or
 all user environments.
+
+The successful desktop run used `/` as the macOS working directory and
+`C:\Windows\system32` on Windows. Cron and systemd used `/home/runner` in their
+Ubuntu checks. Always use absolute configuration/state/script paths; do not rely
+on the repository checkout as the scheduled working directory. These probes
+exercise scheduler execution without DNS; unattended DDNS still depends on
+provider-specific validation and a writable/disabled file log.
 
 ## Manual Linux systemd integration
 

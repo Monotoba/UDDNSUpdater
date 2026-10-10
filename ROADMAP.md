@@ -10,17 +10,18 @@ mocked native-command tests; Windows CI also checks PowerShell syntax. YDNS reco
 selection and GoDaddy PAT/v3 single-record replacement are implemented. These
 changes do not alter the published alpha.
 
-Linux cron and macOS launchd scheduled execution have passed disposable-runner
-checks. Windows live testing found a principal identity representation issue;
-the SID-resolution fix requires a live rerun. Systemd uses the same daily planner
-and has offline definition/lifecycle tests; native execution is a separate gate.
+Linux cron, systemd user timers, macOS launchd and Windows Task Scheduler have
+passed disposable-runner scheduled-execution and cleanup checks. Windows testing
+found and resolved account-name/SID and omitted-default run-level export
+differences. Systemd uses the same daily planner as cron. User-specific session,
+sleep, reboot and DST environments remain separate checks.
 
 The next work is validation:
 
 1. Resolve remaining provider response/retry evidence and No-IP identification
    requirements. Keep unverified responses fail-closed.
-2. Exercise each native scheduler with a harmless local probe; confirm execution,
-   argument boundaries, environment, removal, and preservation of unrelated tasks.
+2. Retain the successful native scheduler probes as manual pre-release checks;
+   validate additional session/platform behavior where it is advertised.
 3. Validate providers against disposable records with authorized credentials;
    confirm request acceptance, record identity, and authoritative DNS propagation.
 4. Reconcile operating documentation, build/install the candidate distribution,

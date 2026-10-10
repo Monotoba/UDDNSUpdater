@@ -12,8 +12,9 @@ adapters, with a separate experimental task-scheduling component.
 loading, configuration validation, dry runs, and CLI failure handling have an offline
 test baseline. The repaired adapters request encoding and response checks have offline
 coverage. Main has live DuckDNS update/restoration evidence and native Linux cron
-and macOS launchd execution evidence. Other providers, Windows execution, and
-systemd timers still require validation; see the checklist below.
+and macOS launchd execution evidence, plus Linux systemd user-timer and Windows
+Task Scheduler execution. Other providers and user-specific unattended environments
+still require validation; see the checklist below.
 Version 0.1.0a1 is the initial experimental alpha. PyPI publication is on hold.
 
 ## Evaluate the alpha candidate

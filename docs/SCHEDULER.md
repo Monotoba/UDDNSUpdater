@@ -253,8 +253,14 @@ an existing Linux user crontab, never system crontabs or another user's tasks.
 Names use 1–64 ASCII letters, digits, underscores or hyphens. Normal schedule()
 calls remain blocked; installation requires the explicit CLI mode.
 
+The DDNS task examples below include `--no-log` because native working directories
+may not be writable. The probe checks observed the home directory for cron/systemd,
+`/` for launchd and `C:\Windows\system32` for Windows. Default DDNS file logging
+writes `ddns_update.log` in that working directory; without `--no-log`, confirm it
+is writable. Always supply absolute configuration, state and resource paths.
+
 ```sh
-python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --install-cron ddns -- /absolute/path/to/python /absolute/path/to/ddns_updater.py --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --install-cron ddns -- /absolute/path/to/python /absolute/path/to/ddns_updater.py --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600 --no-log
 python -m UTaskScheduler.utask_scheduler --remove-cron ddns
 ```
 
@@ -283,7 +289,7 @@ The 0.1.0a1 release still has previews only. Main also implements Windows
 registration, described in the following section.
 
 ```sh
-python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --install-launchd ddns -- /absolute/path/to/python /absolute/path/to/ddns_updater.py --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --install-launchd ddns -- /absolute/path/to/python /absolute/path/to/ddns_updater.py --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600 --no-log
 python -m UTaskScheduler.utask_scheduler --remove-launchd ddns
 ```
 
@@ -305,9 +311,10 @@ Launchctl commands have 15-second timeouts and raw diagnostics are withheld.
 Use a trusted home directory; this is not protection against another process
 that can modify it or race file/native operations. Avoid concurrent changes to
 the same label. Registered service identity is checked by label, not by execution
-history. Actual launchd execution, permissions, login/logout behavior, and missed
-triggers require macOS integration validation before 1.0. Automated tests mock
-launchctl and never register real tasks. No system daemon or elevated installation
+history. The manual macOS 15 Intel check verified GUI-domain scheduled execution,
+exact argv, removal and unrelated plist preservation. Other permission/session,
+sleep and missed-trigger behavior remain environment-specific checks. Routine tests
+mock launchctl and never register real tasks. No system daemon or elevated installation
 is supported.
 
 ## Development toward 1.0: explicit Windows registration
@@ -320,7 +327,7 @@ no password, remote account, or elevated principal is requested. The user must
 be logged on for execution. Windows task permissions may still prevent registration.
 
 ```powershell
-python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --install-windows ddns --start-date 2026-10-10 -- C:\Python\python.exe C:\Tools\ddns_updater.py --config-file C:\Private\ddns.ini --state-file C:\Private\state.json --refresh-seconds 3600
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --install-windows ddns --start-date 2026-10-10 -- C:\Python\python.exe C:\Tools\ddns_updater.py --config-file C:\Private\ddns.ini --state-file C:\Private\state.json --refresh-seconds 3600 --no-log
 python -m UTaskScheduler.utask_scheduler --remove-windows ddns
 ```
 
@@ -340,9 +347,9 @@ verification; explicit elevated or unverified levels are rejected.
 
 PowerShell runs without a profile or interactive prompts, with a 30-second timeout.
 User values arrive as JSON on stdin, not interpolated script code. Raw diagnostics
-are withheld. Task Scheduler module availability, permissions, environment,
-battery/idle defaults, login state, missed triggers, and actual execution remain
-Windows integration gates for 1.0. Automated tests mock task commands; Windows CI
+are withheld. The manual hosted-Windows check verified registration/export,
+scheduled execution, exact argv and removal. Other permissions, battery/idle
+defaults, login states and missed triggers require environment-specific validation. Automated tests mock task commands; Windows CI
 parses the PowerShell syntax without registering tasks. Avoid concurrent edits of
 the same name. No system, remote, password-based, or elevated tasks are supported.
 
@@ -353,8 +360,8 @@ On main, choose the Linux backend explicitly. Existing `--install-cron`,
 require `--scheduler cron` or `--scheduler systemd`:
 
 ```sh
-python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --scheduler systemd --preview ddns -- /absolute/path/to/python -m ddns_updater --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600
-python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --scheduler systemd --install ddns -- /absolute/path/to/python -m ddns_updater --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --scheduler systemd --preview ddns -- /absolute/path/to/python -m ddns_updater --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600 --no-log
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --scheduler systemd --install ddns -- /absolute/path/to/python -m ddns_updater --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600 --no-log
 python -m UTaskScheduler.utask_scheduler --scheduler systemd --status ddns
 python -m UTaskScheduler.utask_scheduler --scheduler systemd --remove ddns
 ```
