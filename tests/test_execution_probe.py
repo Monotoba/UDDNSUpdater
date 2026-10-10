@@ -46,14 +46,22 @@ def test_probe_reports_write_failure_without_arguments(tmp_path, capsys, monkeyp
     assert captured.err == 'Scheduler probe could not write execution evidence.\n'
 
 
-def test_probe_module_runs_outside_checkout(tmp_path):
+@pytest.mark.parametrize("alias_cwd", [False, True])
+def test_probe_module_runs_outside_checkout(tmp_path, alias_cwd):
     output = tmp_path / 'output'
     output.mkdir()
+    working_directory = tmp_path
+    if alias_cwd:
+        working_directory = tmp_path / 'cwd-alias'
+        try:
+            working_directory.symlink_to(tmp_path, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            pytest.skip('Directory symlinks unavailable for this user.')
     environment = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1]))
     result = subprocess.run(
         [sys.executable, '-m', 'UTaskScheduler.execution_probe',
          '--output-directory', str(output), '--', 'two words', '100%', '--flag'],
-        cwd=tmp_path, env=environment, capture_output=True, text=True, timeout=15,
+        cwd=working_directory, env=environment, capture_output=True, text=True, timeout=15,
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout == result.stderr == ''
@@ -61,7 +69,7 @@ def test_probe_module_runs_outside_checkout(tmp_path):
     assert len(files) == 1
     record = json.loads(files[0].read_text())
     assert record['arguments'] == ['two words', '100%', '--flag']
-    assert record['working_directory'] == str(tmp_path)
+    assert record['working_directory'] == str(working_directory.resolve())
 
 
 def test_probe_never_overwrites_existing_record(tmp_path, monkeypatch):

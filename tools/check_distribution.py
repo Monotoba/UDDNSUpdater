@@ -19,7 +19,7 @@ def check(wheel):
         assert any(name.endswith('/licenses/LICENSE') for name in names)
         assert not any(name.startswith('tests/') for name in names)
     with tempfile.TemporaryDirectory() as directory:
-        root = Path(directory)
+        root = Path(directory).resolve()
         # Verify dependency resolution in a fresh environment before blocking HTTP.
         venv.EnvBuilder(with_pip=True, system_site_packages=False).create(root/'venv')
         python = root/'venv'/('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
