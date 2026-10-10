@@ -97,7 +97,10 @@ can alias `hostname` only when it contains the host name; `api_key` can alias
 The old two-key configuration cannot supply the required authentication username
 and fails validation before any requests. Numeric domain IDs are also rejected.
 Use a hostname such as example.ydns.io and credentials from the YDNS API page.
-`record_id` selection is not implemented; do not use a record ID as the hostname.
+`record_id` optionally selects a specific record while hostname remains required.
+Use a positive ASCII decimal identifier, at most 20 digits (a local input bound,
+not a documented provider maximum). Invalid or blank values fail before requests.
+Do not use a record ID as the hostname.
 
 ## GoDaddy and Google Domains corrections
 

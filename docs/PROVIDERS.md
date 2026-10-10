@@ -13,7 +13,7 @@ live updates or DNS propagation checks have been performed. See [alpha scope](AL
 | ChangeIP | HTTPS Basic auth; encoded parameters; known plain-text success heading, matching IP when present | Provider response documentation/controlled live confirmation |
 | SecurePoint | Corrected HTTPS endpoint; Basic auth; encoded parameters; good/nochg checks; persistent conservative stops | Full wiki access, retry policy, live transport validation, controlled live confirmation |
 | SpDYN | Reuses SecurePoint and shares its persistent stop identity | Same wiki/retry-policy/live-validation limitations as SecurePoint |
-| YDNS | Trailing-slash HTTPS endpoint; Basic auth; exact good; legacy aliases; persistent conservative stops | Live transport validation, live validation; optional record_id selection not implemented |
+| YDNS | Trailing-slash HTTPS endpoint; Basic auth; exact good; legacy aliases; optional record_id; persistent conservative stops | Live transport validation, live validation; record_id/account association needs live confirmation |
 | GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance; persistent conservative stops | Live transport validation; controlled live validation; PAT/v3 migration; named multi-value A sets are replaced |
 | GoogleDomains | Disabled before network access; retained discoverable class and migration error | Service unavailable for migrated domains |
 | Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks; shared persistent stops | Live transport validation; controlled live response confirmation; account linked-update scope; v2 not implemented |
@@ -268,3 +268,13 @@ retained; current full response compatibility and live validation remain outstan
 
 Shared transport exceptions and rejected discovery HTTP statuses now use persistent
 1,800-second provider-scoped cooldowns. See [scope and limitations](UPDATE_STATE.md).
+
+### YDNS record selection on main
+
+The optional record_id setting now follows the provider's documented API-v1
+selector. Hostname and Basic credentials remain required; omitted selectors preserve
+the existing host-based lookup. Positive ASCII decimal identifiers up to 20 digits
+are accepted (client input bound only). Validation occurs before discovery, including
+invalid values in later service sections. Record selection changes accepted-update
+identity; the provider-wide stop scope is unchanged. Account/record association and
+live response/propagation remain unverified.

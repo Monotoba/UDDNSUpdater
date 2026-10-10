@@ -1,3 +1,5 @@
+import re
+
 from .ddns_provider import DDNSProvider, ProviderError, ProviderHTTPError, ProviderStopError
 
 
@@ -15,8 +17,18 @@ class YDNS(DDNSProvider):
                 settings[new] = settings[old]
         return settings
 
+    @staticmethod
+    def validate_settings(config):
+        if 'record_id' in config:
+            value = config['record_id']
+            # Bound parsing input locally; this is not a claimed provider limit.
+            if (not isinstance(value, str) or not re.fullmatch(r'[0-9]{1,20}', value)
+                    or int(value) == 0):
+                raise ProviderError('YDNS record_id must be a positive decimal identifier.')
+
     def __init__(self, name, config):
         settings = self.normalize_settings(config)
+        self.validate_settings(settings)
         if settings.get("hostname", "").strip().isdigit():
             raise ProviderError("YDNS needs a hostname, not a numeric domain ID.")
         super().__init__(name, settings)
@@ -26,10 +38,13 @@ class YDNS(DDNSProvider):
 
     def update_ddns(self):
         external_ip = self.validate_ipv4(self.external_ip)
+        params = {"host": self.config["hostname"], "ip": external_ip}
+        if 'record_id' in self.config:
+            params['record_id'] = self.config['record_id']
         try:
             text = self.request_text(
                 "https://ydns.io/api/v1/update/",
-                params={"host": self.config["hostname"], "ip": external_ip},
+                params=params,
                 auth=(self.config["username"], self.config["password"]),
             )
         except ProviderHTTPError:
