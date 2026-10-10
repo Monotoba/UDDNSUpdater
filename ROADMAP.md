@@ -34,3 +34,7 @@ unvalidated; Windows native registration and provider/live gates remain for 1.0.
 Explicit Windows current-user interactive registration/removal is implemented on
 main, with mocked task commands and Windows-only PowerShell parsing in CI.
 Native execution on all platforms and provider integration gaps remain for 1.0.
+
+YDNS optional API-v1 record_id selection is implemented and validated before
+requests. Acceptance identities include selection changes. Live account/record
+association remains a validation gate; this does not establish live interoperability.
