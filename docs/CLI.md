@@ -47,7 +47,8 @@ Every row also requires `ddns_provider` set to the indicated class name.
 | EntryDNS | token, hostname |
 | Afraid, FreeDNS, CloudNS | api_key, hostname |
 | GoogleDomains, DNSMax | Unavailable; retained for clear migration errors |
-| GoDaddyDDNS | api_key, api_secret, domain, hostname |
+| GoDaddyDDNS (default v1) | api_key, api_secret, domain, hostname |
+| GoDaddyDDNS (api_version=v3) | pat, domain, hostname, record_id |
 | NamecheapDDNS | domain, password, hostname |
 | YDNS | hostname, username, password |
 
@@ -110,7 +111,8 @@ A records **at that name** with one IPv4 value and TTL 600, preserving other nam
 and record types. This is unsuitable for a multi-value A-record set you need to
 retain. The old domain-wide A-record replacement is no longer used. Missing
 hostname fails validation before any requests. Classic key/secret authentication
-is retained for the v1 API; PAT/v3 migration is not implemented.
+is retained for the v1 API. Explicit PAT/v3 configuration is available on main,
+as described below.
 
 GoogleDomains is unavailable for both dry-run and real-run configurations.
 Migrated Google Domains no longer supports DDNS according to Squarespace. The
@@ -163,3 +165,34 @@ The parent directory must exist and be controlled by the user; choose a refresh
 interval appropriate for the provider. There is no universally verified default.
 Dry-run needs neither option and does not inspect state usability. See
 [update controls and recovery](UPDATE_STATE.md) and [alpha limits](ALPHA.md).
+
+## GoDaddy v3 migration on main
+
+The published 0.1.0a1 alpha remains v1-only. Main accepts explicit v3 configuration:
+
+```ini
+[godaddy-record]
+ddns_provider = GoDaddyDDNS
+api_version = v3
+pat = evaluation-only-token
+domain = example.org
+hostname = @
+record_id = evaluation-only-record
+ttl = 600
+```
+
+This example is dry-run only. Obtain the real PAT and record ID from your account;
+never share them in issues or chat. Use a token authorized for domains.dns:update.
+Domain is the punycode zone; hostname is the relative record name. Verify that the
+record ID belongs to that zone and is the intended A record. TTL defaults to 600
+and must be 600–86400. Record IDs accept ASCII letters/digits/underscores/hyphens
+up to 256 characters, a conservative client input bound. V3 replaces only that
+record with configured name/type=A/data/TTL; other writable fields are not preserved.
+It does not list, create, delete records, or migrate credentials automatically.
+
+V3 accepts only HTTP 200 with matching recordId/name/type/data/TTL JSON. Rejected
+or unconfirmed results persist a stop. V1/v3 share the same provider-wide error
+identity; migration requires investigating and explicitly clearing existing stops.
+API-version/record/TTL/credential changes invalidate accepted-update cache identity.
+Classic settings continue to select v1 when api_version is omitted. Mixing v1
+credentials into v3 does not supply a PAT. Live access and propagation are unverified.
