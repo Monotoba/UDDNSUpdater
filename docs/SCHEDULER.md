@@ -1,9 +1,10 @@
 # Scheduler validation baseline
 
-Daily planning and Linux, macOS, and Windows definition previews are implemented,
-with no native task installation. All three backends block direct installation
-calls. DDNS providers lack persistent change/error controls required
-for unattended use.
+Daily planning and Linux, macOS, and Windows definition previews are implemented.
+Main also provides explicit named install/remove modes; Linux supports cron and
+systemd user timers. General schedule() calls remain blocked. Published 0.1.0a1
+has previews only. Persistent DDNS acceptance/error controls are implemented,
+but live evidence varies by provider and scheduler. See [release validation](RELEASE_VALIDATION.md).
 
 ## Configuration
 
@@ -74,13 +75,14 @@ command arguments.
 2. The Task-section parser now validates JSON actions and daily schedules through
    the unified API. Multi-task native previews/installation and restricted
    calendar/date features remain unavailable.
-3. Add persistent DDNS change detection and provider error/cooldown controls.
+3. Validate the implemented persistent DDNS acceptance/error controls with
+   disposable provider records where credentials are available.
 4. Validate native user-task installation/removal in controlled environments
    before enabling it. Document partial installation, permissions, duplicate
    task handling, local-time behavior, and recovery.
 
-Tests prohibit native task mutations. No live task installation or DNS updates
-were performed for this baseline.
+Routine push/PR tests prohibit native task mutations. Separate manual workflows
+use disposable hosted-runner tasks and the authorized DuckDNS test record.
 
 ## Linux user-crontab preview
 
@@ -102,14 +104,15 @@ crontab (which requires a username), and not a replacement for an existing full
 crontab. A SHELL setting affects subsequent entries when combined with an existing
 file. The preview performs no existing-entry preservation or duplicate handling.
 Explicit install/remove modes on main are described below; real environment and
-execution validation remain outstanding.
+execution evidence is tracked in RELEASE_VALIDATION.md.
 
 The [cron manual](https://man7.org/linux/man-pages/man5/crontab.5.html) specifies
 that percent characters are processed before the command reaches the shell.
 The renderer quotes each argument and isolates escaped percent characters so
 literal backslashes before percent remain intact. Tests model cron's escape scan
 and also run a harmless argv round trip through /bin/sh on Linux/macOS; the actual
-shell check is skipped on Windows. No cron daemon was installed or invoked.
+shell check is skipped on Windows. A separate manual Ubuntu 24.04 workflow has
+also verified actual cron daemon execution and cleanup.
 
 Unlike the ordinary dry run, this explicit preview prints command arguments.
 Keep credentials in protected configuration files rather than command arguments.
@@ -152,7 +155,8 @@ accepts a nonempty list of daily Hour/Minute pairs. The constructor's existing
 second positional `system_task` parameter is retained. Installation and legacy
 file-writing methods now raise `LaunchdPreviewError` without side effects.
 Tests round-trip plist contents; they do not install jobs or establish live
-launchd integration. Native installation remains unavailable.
+launchd integration. Explicit main-branch registration is described below;
+a separate manual macOS workflow has verified scheduled execution and removal.
 
 ## Windows Task Scheduler preview
 
@@ -194,7 +198,8 @@ generates one trigger; `intervals=[[hour, minute], ...]` generates up to 48.
 raise WindowsPreviewError. Existing constructor name/description parameters are
 retained; the name is validated but registration naming remains external to XML.
 Tests inspect the XML and run a harmless real Windows process argv round trip
-in Windows CI. No task is installed or executed through Task Scheduler.
+in routine Windows CI. Actual registration/execution is checked separately by
+the manual desktop workflow; consult RELEASE_VALIDATION.md for current results.
 
 ## Task-section daily planning
 
@@ -264,8 +269,10 @@ timeout. Failures after a write require checking native state before retrying.
 
 Back up your crontab and avoid simultaneous edits: crontab exposes no atomic
 compare-and-swap, so concurrent editors can overwrite each other's changes.
-Installation is mocked in automated tests; real cron execution/environment and
-cross-platform native integration remain release gates for 1.0. Explicit macOS/Windows installation is also implemented on main as described
+Installation is mocked in routine tests. The manual Ubuntu 24.04 check passed
+scheduled execution, exact argv, unrelated-entry preservation and restoration.
+Other environments and cross-platform integration remain separate gates for 1.0.
+Explicit macOS/Windows installation is also implemented on main as described
 below. No task is installed by tests or build checks.
 
 ## Development toward 1.0: explicit macOS registration
@@ -334,3 +341,76 @@ battery/idle defaults, login state, missed triggers, and actual execution remain
 Windows integration gates for 1.0. Automated tests mock task commands; Windows CI
 parses the PowerShell syntax without registering tasks. Avoid concurrent edits of
 the same name. No system, remote, password-based, or elevated tasks are supported.
+
+## Linux choice: cron or systemd user timers
+
+On main, choose the Linux backend explicitly. Existing `--install-cron`,
+`--remove-cron` and `--preview-cron` commands continue to work. Generic modes
+require `--scheduler cron` or `--scheduler systemd`:
+
+```sh
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --scheduler systemd --preview ddns -- /absolute/path/to/python -m ddns_updater --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600
+python -m UTaskScheduler.utask_scheduler --config-file schedule.ini --scheduler systemd --install ddns -- /absolute/path/to/python -m ddns_updater --config-file /absolute/path/to/ddns.ini --state-file /absolute/path/to/state.json --refresh-seconds 3600
+python -m UTaskScheduler.utask_scheduler --scheduler systemd --status ddns
+python -m UTaskScheduler.utask_scheduler --scheduler systemd --remove ddns
+```
+
+Choose the refresh interval for your provider. Substitute `cron` to use a named
+user-crontab block. Cron status checks marker presence only, not daemon health or
+execution. Systemd-specific aliases are `--preview-systemd NAME`,
+`--install-systemd NAME`, `--status-systemd NAME`, and `--remove-systemd NAME`.
+Remove/status need no schedule configuration and accept no command. Do not install
+the same updater through both backends unless that is intentional.
+
+Systemd uses the same local daily Hour/Minute Cartesian product (up to 1,440
+triggers). It writes `uddnsupdater-NAME.service` and `.timer` beneath
+`$XDG_CONFIG_HOME/systemd/user`, defaulting to `~/.config/systemd/user`. Preview
+prints both definitions, labeled by filename, with no files or subprocesses.
+The Python API `scheduler.preview_systemd(argv, name)` returns a filename/text
+mapping. No root, system-wide unit, sudo, credential prompt or automatic backend
+fallback is used. An existing user systemd manager and accessible user bus are
+required; a missing manager fails before definitions are created.
+
+The service is Type=oneshot, works from the user's home directory, and uses
+UMask=0077. ExecStart uses systemd quoting, escapes percent specifiers, and
+suppresses dollar-variable substitution with its `:` prefix; no shell is added.
+Empty arguments, literal dollar/percent strings, quotes, backslashes and semicolons
+are preserved. Executables must be absolute; arguments must be valid UTF-8 without
+control characters. Use absolute paths for all resources and keep credentials in
+protected configuration files. Preview and unit metadata contain argv verbatim.
+
+Timers use OnCalendar, AccuracySec=1s, no randomized delay, and Persistent=false.
+They do not replay missed runs on activation or wake a suspended computer. Timer
+accuracy is not a real-time execution guarantee. Jobs longer than their interval
+are not started again while the same oneshot service is active. Clock/time-zone,
+DST, reboot and suspend behavior require testing in the intended environment.
+
+A user manager generally follows login/session lifetime. Running without an active
+login may require an administrator-authorized `loginctl enable-linger USER`; inspect
+`loginctl show-user USER -p Linger` first. This tool never changes linger. See the
+upstream [timer manual](https://github.com/systemd/systemd/blob/main/man/systemd.timer.xml),
+[service command syntax](https://github.com/systemd/systemd/blob/main/man/systemd.service.xml),
+[quoting rules](https://github.com/systemd/systemd/blob/main/man/systemd.syntax.xml),
+and [loginctl manual](https://www.freedesktop.org/software/systemd/man/252/loginctl.html).
+
+Install refuses existing unit files, registered names, enablement links, symlinks
+and drop-ins. It creates files exclusively with mode 0600, reloads the user manager,
+verifies native fragment identity, and enables/starts only the timer. Remove before
+reinstalling. Status verifies unchanged managed files and reports LoadState,
+ActiveState and UnitFileState for both units; it does not claim a successful job run.
+For execution diagnostics, use `journalctl --user -u uddnsupdater-NAME.service`
+and `systemctl --user list-timers uddnsupdater-NAME.timer`.
+
+Removal accepts only unchanged current-user managed definitions, checks native
+fragment paths/drop-ins, disables/stops the timer, stops its service (including a
+running job), removes managed files, reloads and verifies absence. Partial pairs
+from an ordinary failed install can be removed when their surviving definitions
+are valid. Edited/foreign or truncated files require manual inspection; they are
+never silently overwritten or deleted. Errors after writes or native changes can
+leave partial state; inspect before retrying. Native commands have 30-second
+timeouts and fixed diagnostics. Use trusted nonsymlink parent directories and
+avoid concurrent edits: file/native operations are not an atomic transaction.
+
+Routine tests use mocked user-manager operations plus systemd-analyze verification
+on Linux. The separate manual workflow checks actual scheduled execution and
+cleanup. Consult RELEASE_VALIDATION.md for evidence before unattended use.

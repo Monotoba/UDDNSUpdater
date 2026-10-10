@@ -59,3 +59,15 @@ def apply(name, preview=None):
         return True
     except (OSError, subprocess.SubprocessError, UnicodeError):
         raise CronPreviewError('Cannot complete crontab operation; verify native state before retrying.') from None
+
+
+def status(name):
+    """Read marker presence only; this does not prove daemon availability/execution."""
+    markers(name)
+    try:
+        current = subprocess.run(['crontab', '-l'], capture_output=True, text=True, timeout=15)
+        if current.returncode:
+            raise CronPreviewError('Cannot read existing user crontab.')
+        return replace_block(current.stdout, name) != current.stdout
+    except (OSError, subprocess.SubprocessError, UnicodeError):
+        raise CronPreviewError('Cannot inspect existing user crontab.') from None
