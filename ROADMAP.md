@@ -96,3 +96,8 @@ GoDaddyDDNS now requires persistent CLI state and saves conservative provider-wi
 stops on HTTP rejection or unexpected bodies. Existing v1 named A-set replacement
 and empty 200/204 acceptance remain unchanged. Transport backoff, PAT/v3 migration,
 and controlled live validation remain unfinished.
+
+Shared Requests transport failures and rejected discovery HTTP responses now persist
+a conservative 1,800-second provider-scoped cooldown. No automatic in-run retries
+are made. Global discovery controls, total request deadlines, and controlled live
+validation remain outside the initial alpha scope.
