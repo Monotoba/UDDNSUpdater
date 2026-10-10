@@ -26,3 +26,7 @@ Explicit named Linux user-crontab install/remove is implemented on main with
 mocked native-command regression tests. The 0.1.0a1 tag remains unchanged.
 Native cron execution/environment validation, macOS/Windows registration,
 provider evidence gaps, and controlled live validation remain 1.0 release gates.
+
+Explicit macOS user-agent install/remove is implemented on main with mocked
+launchctl/file regression checks. Actual registration/execution on macOS remains
+unvalidated; Windows native registration and provider/live gates remain for 1.0.

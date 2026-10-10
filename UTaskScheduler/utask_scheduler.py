@@ -133,6 +133,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Validate a daily native task schedule")
     parser.add_argument("--config-file", default="config.ini")
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--install-launchd", metavar="NAME", help="Explicitly register a named macOS user agent")
+    mode.add_argument("--remove-launchd", metavar="NAME", help="Remove only a named macOS user agent")
     mode.add_argument("--install-cron", metavar="NAME", help="Explicitly install/replace a named Linux user-crontab block")
     mode.add_argument("--remove-cron", metavar="NAME", help="Remove only a named Linux user-crontab block")
     mode.add_argument("--dry-run", action="store_true", help="Validate only; no native task installation")
@@ -147,6 +149,28 @@ def main(argv=None):
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     try:
         scheduler = UTaskScheduler(args.config_file)
+        if args.install_launchd is not None or args.remove_launchd is not None:
+            if sys.platform != 'darwin':
+                raise SchedulerError('Native launchd operations are available only on macOS.')
+            if args.remove_launchd is not None and command:
+                raise SchedulerError('Remove-launchd does not accept a command.')
+            if __package__:
+                from .schedulers.launchd_install import install, remove
+                from .schedulers.scheduler_macos import LaunchdPreviewError
+            else:
+                from schedulers.launchd_install import install, remove
+                from schedulers.scheduler_macos import LaunchdPreviewError
+            try:
+                if args.install_launchd is not None:
+                    tasks = scheduler.plan(command)
+                    install(args.install_launchd, tasks[0]['action'],
+                            [[task['hour'], task['minute']] for task in tasks])
+                else:
+                    remove(args.remove_launchd)
+            except LaunchdPreviewError as error:
+                raise SchedulerError(str(error)) from None
+            print('Named user-agent operation verified.')
+            return 0
         if args.install_cron is not None or args.remove_cron is not None:
             if sys.platform != 'linux':
                 raise SchedulerError('Native cron operations are available only on Linux.')
