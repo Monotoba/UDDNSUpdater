@@ -102,7 +102,7 @@ def test_cloudns_cli_status_and_redaction(monkeypatch, tmp_path, capsys, body, e
     path.write_text('[service]\nddns_provider=CloudNS\n'+
         '\n'.join(f'{k}={v}' for k,v in CONFIG.items()))
     mock_http(monkeypatch, body)
-    assert ddns_updater.main(['--config-file', str(path), '--no-log']) == expected
+    assert ddns_updater.main(['--config-file', str(path), '--no-log', '--state-file', str(tmp_path/'state.json'), '--refresh-seconds', '60']) == expected
     output = capsys.readouterr()
     assert SECRET not in output.out+output.err
     if expected == 0:

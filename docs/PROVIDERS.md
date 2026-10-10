@@ -17,9 +17,9 @@ live updates or DNS propagation checks have been performed. No release is availa
 | GoDaddyDDNS | Scoped v1 PUT by domain/type/name; explicit hostname; encoded paths; key/secret auth; shared HTTP protections; empty 200/204 acceptance | Controlled live validation; PAT/v3 migration; named multi-value A sets are replaced |
 | GoogleDomains | Disabled before network access; retained discoverable class and migration error | Service unavailable for migrated domains |
 | Afraid / FreeDNS | Shared API-v1 direct update key; encoded address; shared HTTP protections; conservative hostname/IP response checks; shared persistent stops | Transport backoff; controlled live response confirmation; account linked-update scope; v2 not implemented |
-| CloudNS | Documented IPv4 DynamicURL endpoint; encoded per-record q key and ip; shared HTTP protections; exact OK response | Controlled live acceptance/propagation validation; optional JSON/failover parameters not implemented |
+| CloudNS | Documented IPv4 DynamicURL endpoint; encoded per-record q key and ip; shared HTTP protections; exact OK response; persistent conservative stops | Transport backoff; controlled live acceptance/propagation validation; optional JSON/failover parameters not implemented |
 | DNSMax | Disabled before network access; retained class with migration errors | Provider closed January 27, 2026 |
-| EntryDNS | Documented per-record HTTPS GET; encoded token path and explicit ip; shared HTTP protections; exact OK policy | Provider response specification/controlled live confirmation; token-to-hostname association not verified |
+| EntryDNS | Documented per-record HTTPS GET; encoded token path and explicit ip; shared HTTP protections; exact OK policy; persistent conservative stops | Transport backoff; provider response specification/controlled live confirmation; token-to-hostname association not verified |
 | EuroDynDNS | Documented HTTPS update endpoint; encoded hostname/myip; Basic auth; single good/nochg status with matching IPv4 when present; persistent conservative stops | Transport backoff; controlled live response/propagation validation |
 
 The shared discovery endpoint is `https://api.ipify.org`. It returns an IPv4

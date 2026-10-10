@@ -82,6 +82,6 @@ Legacy TaskN configurations now support validated daily planning with
 See [the scheduler guide](docs/SCHEDULER.md); installation remains unavailable.
 
 Opt-in [persistent change detection](docs/UPDATE_STATE.md) is implemented via
-`--state-file /absolute/path/to/state.json --refresh-seconds N`. No-IP/Dynu stop/cooldown persistence and SecurePoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap/DuckDNS/FreeDNS/Afraid conservative stops
+`--state-file /absolute/path/to/state.json --refresh-seconds N`. No-IP/Dynu stop/cooldown persistence and SecurePoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap/DuckDNS/FreeDNS/Afraid/CloudNS/EntryDNS conservative stops
 are implemented; these providers require the state options for normal updates. Other provider controls remain unfinished; unattended operation
 is not ready.

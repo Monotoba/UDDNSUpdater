@@ -1,7 +1,7 @@
 # Accepted-update state foundation
 
 `update_state.py` provides a local accepted-update state store. The DDNS CLI
-now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap/DuckDNS/FreeDNS/Afraid conservative stops
+now supports opt-in change detection, described below. No-IP/Dynu stop/cooldown controls and Securepoint/SpDYN/YDNS/ChangeIP/EuroDynDNS/Namecheap/DuckDNS/FreeDNS/Afraid/CloudNS/EntryDNS conservative stops
 are implemented; other providers remain unfinished; this is not readiness for unattended operation.
 
 ```python
@@ -475,3 +475,34 @@ with open_state('/absolute/path/to/state.json') as state:
 
 Transport/discovery backoff remains unfinished. Direct adapter callers must manage
 persistent controls themselves.
+
+## CloudNS and EntryDNS conservative stops
+
+Normal CLI updates for both providers require `--state-file` and
+`--refresh-seconds`; dry-run remains offline without state. Each keeps its existing
+exact OK check after stripping outer whitespace. HTTP rejection or any unconfirmed
+body persists a provider-wide stop and aborts remaining updates in that run.
+Later runs check the stop before discovery. Changing credentials, hostnames, or
+section names cannot bypass it. The two providers have separate error identities.
+Each stop covers that provider's services sharing the state file; this conservative
+client policy does not imply that an underlying error affects every record.
+No undocumented retry interval is inferred.
+
+Investigate the cause before clearing only the affected provider's stop. Preserve
+accepted entries. For CloudNS:
+
+```python
+from update_state import open_state
+from ddns_updater import provider_error_key
+from providers.provider_cloudns import CloudNS
+
+with open_state('/absolute/path/to/state.json') as state:
+    state.clear_error(provider_error_key(CloudNS, {}))
+    state.save()
+```
+
+For EntryDNS, import EntryDNS from providers.provider_entrydns and use it instead
+of CloudNS in provider_error_key. Transport/discovery backoff and live
+interoperability remain unverified. Direct adapter callers must manage state
+themselves. The configured hostname is a local label; record selection uses the
+provider key/token, whose association still needs account verification.
