@@ -55,7 +55,7 @@ def check(wheel):
         record = json.loads(records[0].read_text(encoding='utf-8'))
         assert record['arguments'] == ['two words', '100%', '--flag']
         assert Path(record['executable']).resolve() == python.resolve()
-        assert record['working_directory'] == str(root)
+        assert Path(record['working_directory']).samefile(root)
 
     print('Installed-wheel offline checks passed.')
 

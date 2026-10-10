@@ -69,7 +69,7 @@ def test_probe_module_runs_outside_checkout(tmp_path, alias_cwd):
     assert len(files) == 1
     record = json.loads(files[0].read_text())
     assert record['arguments'] == ['two words', '100%', '--flag']
-    assert record['working_directory'] == str(working_directory.resolve())
+    assert Path(record['working_directory']).samefile(working_directory)
 
 
 def test_probe_never_overwrites_existing_record(tmp_path, monkeypatch):
