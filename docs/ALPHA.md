@@ -1,9 +1,9 @@
-# Alpha candidate 0.1.0a1
+# Alpha 0.1.0a1
 
-This candidate supports experimental IPv4 CLI updates with persistent controls
+This alpha supports experimental IPv4 CLI updates with persistent controls
 and offline scheduler previews. It does not establish live provider interoperability,
-DNS propagation, production readiness, or unattended scheduling support. No release
-has been published yet; PyPI publication remains on hold.
+DNS propagation, production readiness, or unattended scheduling support. See [GitHub releases](https://github.com/Monotoba/UDDNSUpdater/releases) for source
+archives. PyPI publication remains on hold.
 
 ## Installation and offline evaluation
 

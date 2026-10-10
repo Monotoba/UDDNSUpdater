@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/Monotoba/UDDNSUpdater/actions/workflows/tests.yml/badge.svg)](https://github.com/Monotoba/UDDNSUpdater/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Status](https://img.shields.io/badge/status-work%20in%20progress-orange)
+![Status](https://img.shields.io/badge/status-alpha-orange)
 [![License](https://img.shields.io/badge/license-BSD--2--Clause-blue)](LICENSE)
 
 A Python prototype for updating dynamic-DNS records through multiple provider
@@ -13,12 +13,11 @@ loading, configuration validation, dry runs, and CLI failure handling have an of
 test baseline. The repaired adapters request encoding and response checks have offline
 coverage. Live provider requests, credentials, DNS propagation, and native
 scheduling have not been validated.
-There is no release or PyPI package.
+Version 0.1.0a1 is the initial experimental alpha. PyPI publication is on hold.
 
 ## Evaluate the alpha candidate
 
-Version `0.1.0a1` is an alpha candidate; no GitHub release or PyPI publication has
-been made yet. Install from this checkout with `python -m pip install .`, then run
+Version `0.1.0a1` is the initial alpha. See [GitHub releases](https://github.com/Monotoba/UDDNSUpdater/releases). PyPI publication is on hold. Install from this checkout with `python -m pip install .`, then run
 `uddns-updater --config-file examples/evaluation.ini --dry-run` for an offline
 configuration check. See [alpha scope and installation](docs/ALPHA.md).
 
