@@ -86,8 +86,8 @@ See [provider repair status](PROVIDERS.md).
 
 Use `python -m ddns_updater` for the same CLI. The legacy
 `providers.ddns_provider.main()` function delegates to this validated entry point.
-A separate [scheduler dry run](SCHEDULER.md) validates daily trigger plans. Native
-installation remains blocked; see [alpha scope](ALPHA.md).
+A separate [scheduler dry run](SCHEDULER.md) validates daily trigger plans. Explicit named installation/removal modes are available in 0.1.0a2; ordinary
+schedule() calls remain blocked. See [alpha scope](ALPHA.md).
 
 ## YDNS configuration correction
 
@@ -155,7 +155,8 @@ with an explicit IPv4. TLS certificate verification remains enabled.
 provider's documented HTTPS update endpoint with Basic authentication. Only
 exact good/nochg status, optionally followed by the requested IPv4, is accepted.
 Repeated nochg updates can trigger abuse; the CLI persists a stop after abuse
-and supports accepted-update change detection. See [persistent state](UPDATE_STATE.md). Native task installation remains blocked.
+and supports accepted-update change detection. See [persistent state](UPDATE_STATE.md). Explicit native task installation is available in 0.1.0a2; EuroDNS live
+provider validation remains outstanding.
 
 ## Required state options for normal updates
 
@@ -168,7 +169,7 @@ Dry-run needs neither option and does not inspect state usability. See
 
 ## GoDaddy v3 migration on main
 
-The published 0.1.0a1 alpha remains v1-only. Main accepts explicit v3 configuration:
+Version 0.1.0a1 was v1-only. Version 0.1.0a2 accepts explicit v3 configuration:
 
 ```ini
 [godaddy-record]

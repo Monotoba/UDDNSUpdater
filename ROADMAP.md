@@ -1,14 +1,13 @@
 # Development toward 1.0
 
-The published [0.1.0a1 alpha](docs/ALPHA.md) provides offline-tested IPv4 provider
-updates, persistent acceptance/error state, daily scheduler previews, and source/
-wheel packaging. PyPI publication remains on hold.
+The [0.1.0a2 alpha](docs/ALPHA.md) provides experimental IPv4 provider
+updates, persistent acceptance/error state, daily scheduler previews and explicit
+native installation/removal, and source/wheel packaging. PyPI publication remains on hold.
 
-Main additionally implements explicit installation/removal for Linux user cron and systemd timers,
+This alpha implements explicit installation/removal for Linux user cron and systemd timers,
 macOS user launchd, and Windows current-user interactive tasks. These paths have
 mocked native-command tests; Windows CI also checks PowerShell syntax. YDNS record
-selection and GoDaddy PAT/v3 single-record replacement are implemented. These
-changes do not alter the published alpha.
+selection and GoDaddy PAT/v3 single-record replacement are implemented. The previous 0.1.0a1 release remains unchanged.
 
 Linux cron, systemd user timers, macOS launchd and Windows Task Scheduler have
 passed disposable-runner scheduled-execution and cleanup checks. Windows testing

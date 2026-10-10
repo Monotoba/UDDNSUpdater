@@ -2,8 +2,8 @@
 
 Daily planning and Linux, macOS, and Windows definition previews are implemented.
 Main also provides explicit named install/remove modes; Linux supports cron and
-systemd user timers. General schedule() calls remain blocked. Published 0.1.0a1
-has previews only. Persistent DDNS acceptance/error controls are implemented,
+systemd user timers. General schedule() calls remain blocked. Version 0.1.0a2 includes explicit installation; 0.1.0a1
+had previews only. Persistent DDNS acceptance/error controls are implemented,
 but live evidence varies by provider and scheduler. See [release validation](RELEASE_VALIDATION.md).
 
 ## Configuration
@@ -248,7 +248,7 @@ installation remain unavailable. `UTaskScheduler/sample.ini` is a planning examp
 ## Development toward 1.0: explicit Linux installation
 
 Main now supports explicit `--install-cron NAME` and `--remove-cron NAME` modes.
-The published 0.1.0a1 release still has previews only. These new modes affect only
+These modes are included in 0.1.0a2 and affect only
 an existing Linux user crontab, never system crontabs or another user's tasks.
 Names use 1–64 ASCII letters, digits, underscores or hyphens. Normal schedule()
 calls remain blocked; installation requires the explicit CLI mode.
@@ -285,7 +285,7 @@ below. No task is installed by tests or build checks.
 
 Main now supports `--install-launchd NAME` and `--remove-launchd NAME` for the
 current user's `gui/UID` launchd domain. An active GUI login session is required.
-The 0.1.0a1 release still has previews only. Main also implements Windows
+Version 0.1.0a2 also implements Windows
 registration, described in the following section.
 
 ```sh
@@ -320,7 +320,7 @@ is supported.
 ## Development toward 1.0: explicit Windows registration
 
 Main now supports `--install-windows NAME --start-date YYYY-MM-DD` and
-`--remove-windows NAME`. The published alpha still has previews only.
+`--remove-windows NAME`. Both are included in 0.1.0a2.
 Registration creates a task named UDDNSUpdater-NAME at the local root task path.
 It uses the current user's SID, InteractiveToken logon, and LeastPrivilege;
 no password, remote account, or elevated principal is requested. The user must
