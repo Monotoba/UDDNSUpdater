@@ -91,3 +91,8 @@ transport backoff, linked-update scope confirmation, and live validation remain.
 CloudNS and EntryDNS now require persistent CLI state and save separate provider-wide
 conservative stops on HTTP rejection or unconfirmed bodies. Exact OK acceptance
 is unchanged. Transport backoff and controlled live validation remain unfinished.
+
+GoDaddyDDNS now requires persistent CLI state and saves conservative provider-wide
+stops on HTTP rejection or unexpected bodies. Existing v1 named A-set replacement
+and empty 200/204 acceptance remain unchanged. Transport backoff, PAT/v3 migration,
+and controlled live validation remain unfinished.
