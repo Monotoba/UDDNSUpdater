@@ -87,3 +87,7 @@ is unchanged. Transport backoff and controlled live validation remain unfinished
 FreeDNS/Afraid now require persistent CLI state and share conservative provider-wide
 stops on HTTP rejection or unconfirmed bodies. Success parsing is unchanged;
 transport backoff, linked-update scope confirmation, and live validation remain.
+
+CloudNS and EntryDNS now require persistent CLI state and save separate provider-wide
+conservative stops on HTTP rejection or unconfirmed bodies. Exact OK acceptance
+is unchanged. Transport backoff and controlled live validation remain unfinished.

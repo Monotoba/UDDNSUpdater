@@ -1,11 +1,12 @@
 """EntryDNS per-record HTTPS token updates."""
 from urllib.parse import quote
 
-from .ddns_provider import DDNSProvider, ProviderError
+from .ddns_provider import DDNSProvider, ProviderError, ProviderHTTPError, ProviderStopError
 
 
 class EntryDNS(DDNSProvider):
     required_fields = ('token', 'hostname')
+    requires_persistent_state = True
 
     def __init__(self, name, config):
         # Requests normalizes dot path segments even when quote() is used.
@@ -16,10 +17,13 @@ class EntryDNS(DDNSProvider):
     def update_ddns(self):
         ip = self.validate_ipv4(self.external_ip)
         token = quote(self.config['token'], safe='')
-        body = self.request_text(
-            'https://entrydns.net/records/modify/' + token,
-            {'ip': ip},
-        ).strip()
+        try:
+            body = self.request_text(
+                'https://entrydns.net/records/modify/' + token,
+                {'ip': ip},
+            ).strip()
+        except ProviderHTTPError:
+            raise ProviderStopError('EntryDNS HTTP rejection requires intervention.') from None
         if body != 'OK':
-            raise ProviderError('EntryDNS returned an unrecognized or rejected update.')
+            raise ProviderStopError('EntryDNS did not confirm the update; intervention required.')
         return True
