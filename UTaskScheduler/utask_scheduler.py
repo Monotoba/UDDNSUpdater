@@ -133,6 +133,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Validate a daily native task schedule")
     parser.add_argument("--config-file", default="config.ini")
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--install-windows", metavar="NAME", help="Explicitly register a current-user Windows task")
+    mode.add_argument("--remove-windows", metavar="NAME", help="Remove a managed current-user Windows task")
     mode.add_argument("--install-launchd", metavar="NAME", help="Explicitly register a named macOS user agent")
     mode.add_argument("--remove-launchd", metavar="NAME", help="Remove only a named macOS user agent")
     mode.add_argument("--install-cron", metavar="NAME", help="Explicitly install/replace a named Linux user-crontab block")
@@ -144,11 +146,33 @@ def main(argv=None):
     parser.add_argument("--start-date", help="Windows preview start date (YYYY-MM-DD)")
     parser.add_argument("command", nargs=argparse.REMAINDER, help="Argument list after --")
     args = parser.parse_args(argv)
-    if args.start_date is not None and not args.preview_windows:
-        parser.error("--start-date requires --preview-windows")
+    if args.start_date is not None and not (args.preview_windows or args.install_windows is not None):
+        parser.error("--start-date requires --preview-windows or --install-windows")
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     try:
         scheduler = UTaskScheduler(args.config_file)
+        if args.install_windows is not None or args.remove_windows is not None:
+            if sys.platform != 'win32':
+                raise SchedulerError('Native Windows operations are available only on Windows.')
+            if args.remove_windows is not None and command:
+                raise SchedulerError('Remove-windows does not accept a command.')
+            if __package__:
+                from .schedulers.windows_install import install, remove
+                from .schedulers.scheduler_windows import WindowsPreviewError
+            else:
+                from schedulers.windows_install import install, remove
+                from schedulers.scheduler_windows import WindowsPreviewError
+            try:
+                if args.install_windows is not None:
+                    tasks = scheduler.plan(command)
+                    install(args.install_windows, tasks[0]['action'],
+                            [[task['hour'], task['minute']] for task in tasks], args.start_date)
+                else:
+                    remove(args.remove_windows)
+            except WindowsPreviewError as error:
+                raise SchedulerError(str(error)) from None
+            print('Named Windows task operation verified.')
+            return 0
         if args.install_launchd is not None or args.remove_launchd is not None:
             if sys.platform != 'darwin':
                 raise SchedulerError('Native launchd operations are available only on macOS.')
