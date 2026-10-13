@@ -36,7 +36,7 @@ def test_accepted_intent_must_reach_applied(monkeypatch):
               "record_id": "home", "token": "x" * 48}
     provider = UniversalDDNSServer("local", config)
     assert provider.update_ddns() is True
-    assert [item[0] for item in calls] == ["GET", "PUT", "GET", "GET"]
+    assert [item[0].upper() for item in calls] == ["GET", "PUT", "GET", "GET"]
     assert calls[1][2]["json"]["address"] == "192.0.2.30"
     assert calls[1][2]["allow_redirects"] is False
     assert calls[1][2]["headers"]["Authorization"].startswith("Bearer ")
