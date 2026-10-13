@@ -42,7 +42,7 @@ def check(wheel):
         assert 'usage:' in run([str(command), '--help'])
         for launcher in ([str(command)], [str(python), '-m', 'ddns_updater']):
             run(launcher+['--config-file', str(config), '--dry-run'])
-        code = "from pathlib import Path; import ddns_updater; assert Path(ddns_updater.__file__).resolve().is_relative_to(Path('venv').resolve()); from providers.ddns_provider import load_provider_classes; assert len(load_provider_classes()) == 16"
+        code = "from pathlib import Path; import ddns_updater; assert Path(ddns_updater.__file__).resolve().is_relative_to(Path('venv').resolve()); from providers.ddns_provider import load_provider_classes; assert len(load_provider_classes()) == 17"
         run([str(python), '-c', code])
         assert not (root/'ddns_update.log').exists()
         assert not list(root.glob('*.json'))
