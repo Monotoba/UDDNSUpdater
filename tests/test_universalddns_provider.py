@@ -121,3 +121,39 @@ def test_pending_survives_restart_and_rejects_changed_address(tmp_path):
         provider.pending_state_key = key
         with pytest.raises(ProviderStopError, match="Unresolved earlier"):
             provider.update_ddns()
+
+def test_cli_restart_recovers_stopped_intent_without_resubmission(monkeypatch, tmp_path):
+    import requests
+    import ddns_updater
+    from update_state import open_state
+    from ddns_updater import service_state_key
+    identifier = str(uuid.uuid4())
+    config = {"base_url": "http://127.0.0.1:8765", "record_id": "home",
+              "token": "x" * 48}
+    key = service_state_key("home", UniversalDDNSServer, config)
+    config_file = tmp_path / "config.ini"
+    config_file.write_text("[home]\\nddns_provider=UniversalDDNSServer\\n"
+                           + "\\n".join(f"{k}={v}" for k, v in config.items()) + "\\n")
+    state_file = tmp_path / "state.json"
+    with open_state(state_file) as state:
+        state.record_pending(key, "192.0.2.30", identifier)
+        state.record_error(ddns_updater.provider_error_key(UniversalDDNSServer, config),
+                           now=100)
+        state.save()
+    seen = []
+    def request(self, method, url, **kwargs):
+        seen.append((method.upper(), url))
+        if "api.ipify.org" in url:
+            response = Response(None, 200)
+            response.text = "192.0.2.30"
+            return response
+        return Response({"intent_id": identifier, "status": "applied"}, 200)
+    monkeypatch.setattr(requests.sessions.Session, "request", request)
+    result = ddns_updater.main(["--no-log", "--config-file", str(config_file),
+                                "--state-file", str(state_file), "--refresh-seconds", "3600"])
+    assert result == 0
+    assert [method for method, _ in seen] == ["GET", "GET"]
+    with open_state(state_file) as state:
+        assert not state.pending
+        assert not state.errors
+        assert state.entries[key]["ipv4"] == "192.0.2.30"
