@@ -40,6 +40,7 @@ class UpdateState:
         self.path = Path(path)
         self.entries = {}
         self.errors = {}
+        self.pending = {}
 
     def load(self):
         try:
@@ -51,6 +52,7 @@ class UpdateState:
             except FileNotFoundError:
                 self.entries = {}
                 self.errors = {}
+                self.pending = {}
                 return
             if len(raw) > self.max_bytes:
                 raise StateError('State file exceeds size limit.')
@@ -62,8 +64,8 @@ class UpdateState:
                     result[key] = value
                 return result
             data = json.loads(raw, object_pairs_hook=unique)
-            if (not isinstance(data, dict) or set(data) != ({'version', 'entries'} if data.get('version') == 1 else {'version', 'entries', 'errors'})
-                    or type(data['version']) is not int or data['version'] not in (1, 2)
+            if (not isinstance(data, dict) or set(data) != ({'version', 'entries'} if data.get('version') == 1 else {'version', 'entries', 'errors', 'pending'} if data.get('version') == 3 else {'version', 'entries', 'errors'})
+                    or type(data['version']) is not int or data['version'] not in (1, 2, 3)
                     or not isinstance(data['entries'], dict) or len(data['entries']) > self.max_entries):
                 raise ValueError
             entries = {}
@@ -73,8 +75,11 @@ class UpdateState:
                 entries[key] = {'ipv4': ipv4(record['ipv4']), 'accepted_at': timestamp(record['accepted_at'])}
             errors = data.get('errors', {})
             self.validate_errors(errors)
+            pending = data.get('pending', {})
+            self.validate_pending(pending)
             self.entries = entries
             self.errors = errors
+            self.pending = pending
         except StateError:
             raise
         except (OSError, ValueError, UnicodeError, RecursionError, TypeError):
@@ -142,6 +147,35 @@ class UpdateState:
             raise StateError('Invalid state service key.')
         self.errors.pop(key, None)
 
+    @classmethod
+    def validate_pending(cls, pending):
+        if not isinstance(pending, dict) or len(pending) > cls.max_entries:
+            raise StateError('Invalid pending intent state.')
+        for key, record in pending.items():
+            if (not valid_key(key) or not isinstance(record, dict)
+                    or set(record) != {'ipv4', 'intent_id'}):
+                raise StateError('Invalid pending intent entry.')
+            ipv4(record['ipv4'])
+            import uuid
+            try:
+                parsed = uuid.UUID(record['intent_id'])
+                if str(parsed) != record['intent_id']:
+                    raise ValueError
+            except (ValueError, TypeError, AttributeError):
+                raise StateError('Invalid pending intent identifier.') from None
+
+    def record_pending(self, key, address, intent_id):
+        value = {'ipv4': ipv4(address), 'intent_id': intent_id}
+        self.validate_pending({key: value})
+        if key not in self.pending and len(self.pending) >= self.max_entries:
+            raise StateError('Pending intent limit reached.')
+        self.pending[key] = value
+
+    def clear_pending(self, key):
+        if not valid_key(key):
+            raise StateError('Invalid pending intent key.')
+        self.pending.pop(key, None)
+
     def save(self):
         temporary = None
         try:
@@ -155,7 +189,12 @@ class UpdateState:
                 ipv4(record['ipv4'])
                 timestamp(record['accepted_at'])
             self.validate_errors(self.errors)
-            payload = json.dumps({'version': 2, 'entries': self.entries, 'errors': self.errors}, sort_keys=True).encode('utf-8') + b'\n'
+            self.validate_pending(self.pending)
+            version = 3 if self.pending else 2
+            data = {'version': version, 'entries': self.entries, 'errors': self.errors}
+            if self.pending:
+                data['pending'] = self.pending
+            payload = json.dumps(data, sort_keys=True).encode('utf-8') + b'\n'
             if len(payload) > self.max_bytes:
                 raise StateError('State file exceeds size limit.')
             with tempfile.NamedTemporaryFile(mode='wb', dir=self.path.parent, prefix='.uddns-state-', delete=False) as handle:
