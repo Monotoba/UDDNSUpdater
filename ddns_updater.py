@@ -179,15 +179,19 @@ def run_services(services, args, *, state=None):
                 key = service_state_key(section, provider_class, settings) if state is not None else None
                 error_key = provider_error_key(provider_class, settings) if state is not None else None
                 blocked = state.blocked(error_key, now=int(time.time())) if state is not None else None
-                if blocked:
+                if blocked and not (provider_class.__name__ == "UniversalDDNSServer"
+                                    and state is not None and key in state.pending):
                     failed = True
                     report_failure(f"Service {index}: provider {'requires intervention' if blocked == 'stop' else 'cooldown is active'}; no requests attempted.")
                     continue
                 with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                     provider = provider_class(section, settings)
+                    if provider_class.__name__ == "UniversalDDNSServer" and state is not None:
+                        provider.pending_state = state
+                        provider.pending_state_key = key
                     # Capture the discovered address before invoking an adapter.
                     address = DDNSProvider.validate_ipv4(provider.external_ip) if state is not None else None
-                    unchanged = state is not None and state.matches(
+                    unchanged = state is not None and key not in state.pending and state.matches(
                         key, address, now=int(time.time()), max_age=args.refresh_seconds)
                     result = None if unchanged else provider.update_ddns()
                 if unchanged:
