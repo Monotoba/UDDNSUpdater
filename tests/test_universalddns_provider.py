@@ -69,3 +69,55 @@ def test_unconfirmed_is_not_success(monkeypatch):
 def test_invalid_endpoint_is_rejected_before_network(endpoint):
     with pytest.raises(ProviderError):
         UniversalDDNSServer("test", {"base_url": endpoint, "record_id": "home", "token": "x" * 48})
+
+def test_restart_resumes_polling_without_second_put(monkeypatch, tmp_path):
+    import requests
+    from update_state import open_state
+    from ddns_updater import service_state_key
+    identifier = str(uuid.uuid4())
+    config = {"base_url": "http://127.0.0.1:8765",
+              "record_id": "home", "token": "x" * 48}
+    state_key = service_state_key("local", UniversalDDNSServer, config)
+    state_path = tmp_path / "state.json"
+    with open_state(state_path) as state:
+        state.record_pending(state_key, "192.0.2.30", identifier)
+        state.save()
+    calls = []
+    replies = [Response({"intent_id": identifier, "status": "applied"}, 200)]
+    def request(self, method, url, **kwargs):
+        calls.append((method.lower(), url))
+        return replies.pop(0)
+    monkeypatch.setattr(requests.sessions.Session, "request", request)
+    with open_state(state_path) as state:
+        provider = UniversalDDNSServer.__new__(UniversalDDNSServer)
+        provider.name = "local"
+        provider.config = config
+        provider.external_ip = "192.0.2.30"
+        provider.pending_state = state
+        provider.pending_state_key = state_key
+        assert provider.update_ddns() is True
+        assert not state.pending
+    assert len(calls) == 1
+    assert calls[0][0] == "get"
+    assert identifier in calls[0][1]
+
+
+def test_pending_survives_restart_and_rejects_changed_address(tmp_path):
+    from update_state import open_state
+    key = "c" * 64
+    identifier = str(uuid.uuid4())
+    path = tmp_path / "state.json"
+    with open_state(path) as state:
+        state.record_pending(key, "192.0.2.30", identifier)
+        state.save()
+    with open_state(path) as state:
+        assert state.pending[key] == {"ipv4": "192.0.2.30", "intent_id": identifier}
+        provider = UniversalDDNSServer.__new__(UniversalDDNSServer)
+        provider.name = "local"
+        provider.config = {"base_url": "http://127.0.0.1:8765",
+                           "record_id": "home", "token": "x" * 48}
+        provider.external_ip = "192.0.2.31"
+        provider.pending_state = state
+        provider.pending_state_key = key
+        with pytest.raises(ProviderStopError, match="Unresolved earlier"):
+            provider.update_ddns()
