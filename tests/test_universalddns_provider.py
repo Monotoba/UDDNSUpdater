@@ -130,7 +130,8 @@ def test_cli_restart_recovers_stopped_intent_without_resubmission(monkeypatch, t
     identifier = str(uuid.uuid4())
     config = {"base_url": "http://127.0.0.1:8765", "record_id": "home",
               "token": "x" * 48}
-    key = service_state_key("home", UniversalDDNSServer, config)
+    key = service_state_key("home", UniversalDDNSServer,
+                            {"ddns_provider": "UniversalDDNSServer", **config})
     config_file = tmp_path / "config.ini"
     config_file.write_text("[home]\\nddns_provider=UniversalDDNSServer\\n"
                            + "\\n".join(f"{k}={v}" for k, v in config.items()) + "\\n")
