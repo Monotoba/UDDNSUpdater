@@ -67,20 +67,33 @@ class UniversalDDNSServer(DDNSProvider):
             (self.name + "\0" + base + "\0" + record_id + "\0" + address).encode()
         ).hexdigest()
         headers = {"Authorization": "Bearer " + self.config["token"]}
-        try:
-            response = self._json_object(self.request_text(
+        state_store = getattr(self, "pending_state", None)
+        state_key = getattr(self, "pending_state_key", None)
+        prior = state_store.pending.get(state_key) if state_store is not None else None
+        if prior is not None and prior["ipv4"] != address:
+            raise ProviderStopError("Unresolved earlier address update; intervention required.")
+        if prior is None:
+            try:
+                response = self._json_object(self.request_text(
                 base + "/api/v1/records/" + quote(record_id, safe="") + "/address",
                 headers=headers, method="PUT",
                 payload={"address": address, "request_id": key},
                 accepted_status=(202,),
             ))
-        except ProviderHTTPError:
-            raise ProviderStopError("DDNS API rejected the update; intervention required.") from None
-        identifier = response.get("intent_id")
+            except ProviderHTTPError:
+                raise ProviderStopError("DDNS API rejected the update; intervention required.") from None
+            identifier = response.get("intent_id")
+        else:
+            identifier = prior["intent_id"]
+            response = {"intent_id": identifier, "status": "pending"}
         if (not isinstance(identifier, str) or
                 not re.fullmatch(r"[a-fA-F0-9-]{36}", identifier) or
                 response.get("status") not in ("pending", "applying", "applied")):
             raise ProviderStopError("DDNS API did not return a valid update intent.") from None
+
+        if prior is None and state_store is not None:
+            state_store.record_pending(state_key, address, identifier)
+            state_store.save()
 
         for _ in range(self.max_polls):
             try:
@@ -94,6 +107,9 @@ class UniversalDDNSServer(DDNSProvider):
                 raise ProviderStopError("DNS update status identifier mismatch.") from None
             state = result.get("status")
             if state == "applied":
+                if state_store is not None:
+                    state_store.clear_pending(state_key)
+                    state_store.save()
                 return True
             if state not in ("pending", "applying"):
                 raise ProviderStopError("DNS update failed or status unknown; intervention required.")
